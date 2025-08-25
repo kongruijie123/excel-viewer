@@ -25,7 +25,7 @@ def create_static_excel_viewer():
         print(f"❌ 请先将Excel文件放入 {excel_folder} 文件夹")
         return None
 
-    # 扫描Excel文件
+    # 在处理Excel文件的部分，将原来的try-except修改为：
     for filename in os.listdir(excel_folder):
         if filename.endswith(('.xlsx', '.xls')):
             file_path = os.path.join(excel_folder, filename)
@@ -33,27 +33,54 @@ def create_static_excel_viewer():
                 df = pd.read_excel(file_path, sheet_name=None)
                 excel_data[filename] = {}
 
+                print(f"开始处理文件: {filename}")
+                print(f"工作表列表: {list(df.keys())}")
+
                 for sheet_name, sheet_df in df.items():
+                    print(f"  处理工作表: {sheet_name}")
                     sheet_df = sheet_df.fillna('')
-                    excel_data[filename][sheet_name] = {
-                        'data': sheet_df.to_dict('records'),
-                        'columns': list(sheet_df.columns),
-                        'row_count': len(sheet_df),
-                        'col_count': len(sheet_df.columns)
-                    }
-                print(f"✅ 已处理: {filename}")
+
+                    # 检查数据转换是否成功
+                    try:
+                        data_records = sheet_df.to_dict('records')
+                        excel_data[filename][sheet_name] = {
+                            'data': data_records,
+                            'columns': list(sheet_df.columns),
+                            'row_count': len(sheet_df),
+                            'col_count': len(sheet_df.columns)
+                        }
+                        print(f"    成功转换 {len(data_records)} 行数据")
+                    except Exception as sheet_error:
+                        print(f"    工作表 {sheet_name} 转换失败: {sheet_error}")
+
+                print(f"文件 {filename} 最终包含 {len(excel_data[filename])} 个工作表")
+
             except Exception as e:
-                print(f"❌ 处理文件 {filename} 时出错: {e}")
-
-    if not excel_data:
-        print("❌ 未找到Excel文件，请检查 excel_files 文件夹")
-        return None
-
+                print(f"处理文件 {filename} 时出错: {e}")
+                print(f"错误类型: {type(e).__name__}")
     # 2. 创建输出目录
     output_dir = "docs"  # GitHub Pages 推荐使用 docs 文件夹
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
+    # 在生成 html_content 之前添加这些检查
+    print("\n=== JSON序列化前检查 ===")
+    print(f"excel_data包含的文件: {list(excel_data.keys())}")
 
+    # 检查JSON序列化是否成功
+    try:
+        json_str = json.dumps(excel_data, ensure_ascii=False, indent=2)
+        print("JSON序列化成功")
+
+        # 检查序列化后的JSON字符串是否包含所有文件
+        if "简化板.xlsx" in json_str:
+            print("✅ JSON中包含简化板.xlsx")
+        else:
+            print("❌ JSON中缺少简化板.xlsx")
+
+    except Exception as json_error:
+        print(f"JSON序列化失败: {json_error}")
+
+    # 然后继续原有的 html_content = f"""...""" 代码
     # 3. 生成完整的HTML页面
     html_content = f"""<!DOCTYPE html>
 <html lang="zh-CN">
