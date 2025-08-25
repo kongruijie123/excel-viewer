@@ -1,0 +1,1778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文档展示系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #4CAF50, #2196F3);
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .document-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .section-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .section-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .section-card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .file-upload {
+            margin-bottom: 20px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .file-input {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 12px 20px;
+            background: #007bff;
+            color: white;
+            border-radius: 8px;
+            text-align: center;
+            transition: background 0.3s;
+            cursor: pointer;
+        }
+
+        .file-input-label:hover {
+            background: #0056b3;
+        }
+
+        .upload-btn {
+            width: 100%;
+            padding: 12px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        .upload-btn:hover {
+            background: #218838;
+        }
+
+        .upload-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .content-display {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .error {
+            color: #dc3545;
+            margin-top: 10px;
+        }
+
+        .success {
+            color: #28a745;
+            margin-top: 10px;
+        }
+
+        .slide-content {
+            border: 1px solid #ddd;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+
+        .slide-header {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            font-weight: bold;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .slide-body {
+            padding: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table th, table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #007bff;
+            margin-top: 10px;
+        }
+
+        .file-name {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .qr-display-section {
+            margin-bottom: 40px;
+        }
+
+        .qr-result-card {
+            background: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+
+        .qr-result-card h2 {
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        .qr-result-card > p {
+            margin-bottom: 25px;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .qr-image-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 25px auto;
+            display: inline-block;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .qr-image-container img {
+            max-width: 200px;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .qr-info {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .qr-info p {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .qr-info a {
+            color: #FFE082;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .qr-info a:hover {
+            text-decoration: underline;
+        }
+
+        .new-session-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .new-session-btn:hover {
+            background: white;
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 文档展示系统</h1>
+            <p>上传并展示您的Word、PPT和Excel文件</p>
+        </div>
+
+        <div class="main-content">
+            <!-- 二维码展示区域 -->
+            <div class="qr-display-section" id="qr-display-section" style="display: none;">
+                <div class="qr-result-card">
+                    <h2>📱 扫描查看文档</h2>
+                    <p>文件上传成功！使用手机扫描下方二维码直接查看文档内容</p>
+                    <div class="qr-image-container">
+                        <img id="generated-qr" src="" alt="生成的二维码" />
+                    </div>
+                    <div class="qr-info">
+                        <p><strong>会话ID:</strong> <span id="session-id"></span></p>
+                        <p><strong>直接访问:</strong> <a id="direct-link" href="" target="_blank"></a></p>
+                        <p><strong>已上传文件:</strong> <span id="uploaded-count">0</span> 个</p>
+                    </div>
+                    <button class="new-session-btn" onclick="createNewSession()">创建新会话</button>
+                </div>
+            </div>
+
+            <div class="document-sections">
+                <!-- Word文档区域 -->
+                <div class="section-card">
+                    <h2>📝 Word文档</h2>
+                    <div class="file-upload">
+                        <div class="file-input-wrapper">
+                            <input type="file" id="word-file" class="file-input" accept=".docx" data-type="word">
+                            <label for="word-file" class="file-input-label">选择Word文件 (.docx)</label>
+                        </div>
+                        <div class="file-name" id="word-file-name"></div>
+                        <button class="upload-btn" onclick="uploadFile('word')" id="word-upload-btn" disabled>上传Word文档</button>
+                        <div class="loading" id="word-loading">正在处理文件...</div>
+                        <div class="error" id="word-error"></div>
+                        <div class="success" id="word-success"></div>
+                    </div>
+                    <div class="content-display" id="word-content"></div>
+                </div>
+
+                <!-- PPT演示文稿区域 -->
+                <div class="section-card">
+                    <h2>📊 PPT演示文稿</h2>
+                    <div class="file-upload">
+                        <div class="file-input-wrapper">
+                            <input type="file" id="ppt-file" class="file-input" accept=".pptx" data-type="ppt">
+                            <label for="ppt-file" class="file-input-label">选择PPT文件 (.pptx)</label>
+                        </div>
+                        <div class="file-name" id="ppt-file-name"></div>
+                        <button class="upload-btn" onclick="uploadFile('ppt')" id="ppt-upload-btn" disabled>上传PPT文档</button>
+                        <div class="loading" id="ppt-loading">正在处理文件...</div>
+                        <div class="error" id="ppt-error"></div>
+                        <div class="success" id="ppt-success"></div>
+                    </div>
+                    <div class="content-display" id="ppt-content"></div>
+                </div>
+
+                <!-- Excel表格区域 -->
+                <div class="section-card">
+                    <h2>📈 Excel表格</h2>
+                    <div class="file-upload">
+                        <div class="file-input-wrapper">
+                            <input type="file" id="excel-file" class="file-input" accept=".xlsx,.xls" data-type="excel">
+                            <label for="excel-file" class="file-input-label">选择Excel文件 (.xlsx/.xls)</label>
+                        </div>
+                        <div class="file-name" id="excel-file-name"></div>
+                        <button class="upload-btn" onclick="uploadFile('excel')" id="excel-upload-btn" disabled>上传Excel文档</button>
+                        <div class="loading" id="excel-loading">正在处理文件...</div>
+                        <div class="error" id="excel-error"></div>
+                        <div class="success" id="excel-success"></div>
+                    </div>
+                    <div class="content-display" id="excel-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面加载时检查是否有当前会话
+        window.addEventListener('load', function() {
+            checkCurrentSession();
+        });
+
+        // 检查当前会话
+        function checkCurrentSession() {
+            fetch('/current_qr')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.has_qr) {
+                        showGeneratedQR({
+                            qr_filename: data.qr_filename,
+                            qr_url: data.qr_url,
+                            session_id: data.session_id
+                        });
+                        document.getElementById('uploaded-count').textContent = data.document_count;
+                    }
+                })
+                .catch(error => {
+                    console.log('没有当前会话');
+                });
+        }
+
+        // 文件选择监听
+        document.querySelectorAll('.file-input').forEach(input => {
+            input.addEventListener('change', function() {
+                const type = this.dataset.type;
+                const uploadBtn = document.getElementById(`${type}-upload-btn`);
+                const fileName = document.getElementById(`${type}-file-name`);
+                const errorDiv = document.getElementById(`${type}-error`);
+                const successDiv = document.getElementById(`${type}-success`);
+
+                // 清除之前的消息
+                errorDiv.textContent = '';
+                successDiv.textContent = '';
+
+                if (this.files.length > 0) {
+                    uploadBtn.disabled = false;
+                    fileName.textContent = `已选择: ${this.files[0].name}`;
+                } else {
+                    uploadBtn.disabled = true;
+                    fileName.textContent = '';
+                }
+            });
+        });
+
+        // 上传文件函数
+        function uploadFile(type) {
+            const fileInput = document.getElementById(`${type}-file`);
+            const loadingDiv = document.getElementById(`${type}-loading`);
+            const errorDiv = document.getElementById(`${type}-error`);
+            const successDiv = document.getElementById(`${type}-success`);
+            const contentDiv = document.getElementById(`${type}-content`);
+            const uploadBtn = document.getElementById(`${type}-upload-btn`);
+
+            // 清除之前的消息和内容
+            errorDiv.textContent = '';
+            successDiv.textContent = '';
+            contentDiv.style.display = 'none';
+
+            if (!fileInput.files.length) {
+                errorDiv.textContent = '请先选择文件';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('file_type', type);
+
+            // 显示加载状态
+            loadingDiv.style.display = 'block';
+            uploadBtn.disabled = true;
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingDiv.style.display = 'none';
+                uploadBtn.disabled = false;
+
+                if (data.success) {
+                    successDiv.textContent = '文件上传并处理成功！';
+                    displayContent(type, data.content, data.type);
+
+                    // 显示生成的二维码
+                    if (data.qr_url) {
+                        showGeneratedQR(data);
+                    }
+                } else {
+                    errorDiv.textContent = data.error || '处理文件时出错';
+                }
+            })
+            .catch(error => {
+                loadingDiv.style.display = 'none';
+                uploadBtn.disabled = false;
+                errorDiv.textContent = '网络错误: ' + error.message;
+            });
+        }
+
+        // 显示内容函数
+        function displayContent(type, content, contentType) {
+            const contentDiv = document.getElementById(`${type}-content`);
+
+            if (contentType === 'text') {
+                contentDiv.innerHTML = `<pre>${content}</pre>`;
+            } else if (contentType === 'table') {
+                let html = '';
+                if (content.error) {
+                    html = `<p class="error">${content.error}</p>`;
+                } else {
+                    for (const [sheetName, tableHtml] of Object.entries(content)) {
+                        html += `<h3>工作表: ${sheetName}</h3>${tableHtml}<br>`;
+                    }
+                }
+                contentDiv.innerHTML = html;
+            } else if (contentType === 'slides') {
+                let html = '';
+                if (content[0] && content[0].error) {
+                    html = `<p class="error">${content[0].error}</p>`;
+                } else {
+                    content.forEach(slide => {
+                        html += `
+                            <div class="slide-content">
+                                <div class="slide-header">幻灯片 ${slide.slide_number}</div>
+                                <div class="slide-body">
+                                    ${slide.content.map(text => `<p>${text}</p>`).join('')}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                contentDiv.innerHTML = html;
+            }
+
+            contentDiv.style.display = 'block';
+        }
+
+        // 显示生成的二维码
+        function showGeneratedQR(data) {
+            const qrSection = document.getElementById('qr-display-section');
+            const qrImg = document.getElementById('generated-qr');
+            const sessionIdSpan = document.getElementById('session-id');
+            const directLink = document.getElementById('direct-link');
+            const uploadedCount = document.getElementById('uploaded-count');
+
+            qrImg.src = `/static/${data.qr_filename}`;
+            sessionIdSpan.textContent = data.session_id;
+            directLink.href = data.qr_url;
+            directLink.textContent = data.qr_url;
+
+            // 计算上传文件数量
+            fetch('/current_qr')
+                .then(response => response.json())
+                .then(result => {
+                    if (result.has_qr) {
+                        uploadedCount.textContent = result.document_count;
+                    }
+                });
+
+            qrSection.style.display = 'block';
+            qrSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 创建新会话
+        function createNewSession() {
+            fetch('/new_session')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 隐藏二维码区域
+                        document.getElementById('qr-display-section').style.display = 'none';
+
+                        // 清空所有内容显示区域
+                        ['word', 'ppt', 'excel'].forEach(type => {
+                            const contentDiv = document.getElementById(`${type}-content`);
+                            contentDiv.style.display = 'none';
+                            contentDiv.innerHTML = '';
+
+                            // 重置文件输入
+                            document.getElementById(`${type}-file`).value = '';
+                            document.getElementById(`${type}-file-name`).textContent = '';
+                            document.getElementById(`${type}-upload-btn`).disabled = true;
+
+                            // 清除状态消息
+                            document.getElementById(`${type}-error`).textContent = '';
+                            document.getElementById(`${type}-success`).textContent = '';
+                        });
+
+                        alert('新会话已创建！现在可以上传新的文件。');
+                    }
+                })
+                .catch(error => {
+                    alert('创建新会话失败: ' + error.message);
+                });
+        }
+    </script>
+</body>
+</html>
+<!--<!DOCTYPE html>-->
+<!--<html lang="zh-CN">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>文档上传与查看系统</title>-->
+<!--    <style>-->
+<!--        * {-->
+<!--            margin: 0;-->
+<!--            padding: 0;-->
+<!--            box-sizing: border-box;-->
+<!--        }-->
+
+<!--        body {-->
+<!--            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;-->
+<!--            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);-->
+<!--            min-height: 100vh;-->
+<!--            padding: 20px;-->
+<!--        }-->
+
+<!--        .container {-->
+<!--            max-width: 900px;-->
+<!--            margin: 0 auto;-->
+<!--            background: white;-->
+<!--            border-radius: 20px;-->
+<!--            box-shadow: 0 25px 50px rgba(0,0,0,0.15);-->
+<!--            overflow: hidden;-->
+<!--        }-->
+
+<!--        .header {-->
+<!--            background: linear-gradient(45deg, #4CAF50, #2196F3);-->
+<!--            color: white;-->
+<!--            padding: 50px 40px;-->
+<!--            text-align: center;-->
+<!--            position: relative;-->
+<!--            overflow: hidden;-->
+<!--        }-->
+
+<!--        .header::before {-->
+<!--            content: '';-->
+<!--            position: absolute;-->
+<!--            top: -50%;-->
+<!--            left: -50%;-->
+<!--            width: 200%;-->
+<!--            height: 200%;-->
+<!--            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);-->
+<!--            transform: rotate(45deg);-->
+<!--            animation: shimmer 3s ease-in-out infinite;-->
+<!--        }-->
+
+<!--        @keyframes shimmer {-->
+<!--            0%, 100% { transform: translateX(-100%) rotate(45deg); }-->
+<!--            50% { transform: translateX(100%) rotate(45deg); }-->
+<!--        }-->
+
+<!--        .header h1 {-->
+<!--            font-size: 3em;-->
+<!--            margin-bottom: 20px;-->
+<!--            position: relative;-->
+<!--            z-index: 1;-->
+<!--        }-->
+
+<!--        .header p {-->
+<!--            font-size: 1.2em;-->
+<!--            opacity: 0.9;-->
+<!--            position: relative;-->
+<!--            z-index: 1;-->
+<!--        }-->
+
+<!--        .main-content {-->
+<!--            padding: 50px 40px;-->
+<!--        }-->
+
+<!--        .upload-section {-->
+<!--            background: linear-gradient(135deg, #f8f9fa, #ffffff);-->
+<!--            border-radius: 20px;-->
+<!--            padding: 40px;-->
+<!--            margin-bottom: 40px;-->
+<!--            box-shadow: 0 10px 30px rgba(0,0,0,0.05);-->
+<!--            border: 2px dashed #dee2e6;-->
+<!--            transition: all 0.3s ease;-->
+<!--        }-->
+
+<!--        .upload-section:hover {-->
+<!--            border-color: #4CAF50;-->
+<!--            box-shadow: 0 15px 40px rgba(76,175,80,0.1);-->
+<!--        }-->
+
+<!--        .file-types {-->
+<!--            display: grid;-->
+<!--            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));-->
+<!--            gap: 20px;-->
+<!--            margin-bottom: 30px;-->
+<!--        }-->
+
+<!--        .file-type {-->
+<!--            background: white;-->
+<!--            border-radius: 15px;-->
+<!--            padding: 30px 20px;-->
+<!--            text-align: center;-->
+<!--            box-shadow: 0 8px 25px rgba(0,0,0,0.1);-->
+<!--            cursor: pointer;-->
+<!--            transition: all 0.3s ease;-->
+<!--            border: 2px solid transparent;-->
+<!--        }-->
+
+<!--        .file-type:hover {-->
+<!--            transform: translateY(-5px);-->
+<!--            box-shadow: 0 15px 40px rgba(0,0,0,0.15);-->
+<!--        }-->
+
+<!--        .file-type.selected {-->
+<!--            border-color: #4CAF50;-->
+<!--            background: linear-gradient(135deg, #e8f5e8, #ffffff);-->
+<!--        }-->
+
+<!--        .file-type .icon {-->
+<!--            font-size: 3em;-->
+<!--            margin-bottom: 15px;-->
+<!--        }-->
+
+<!--        .file-type h3 {-->
+<!--            color: #2c3e50;-->
+<!--            margin-bottom: 10px;-->
+<!--        }-->
+
+<!--        .file-type p {-->
+<!--            color: #6c757d;-->
+<!--            font-size: 0.9em;-->
+<!--        }-->
+
+<!--        .upload-form {-->
+<!--            text-align: center;-->
+<!--        }-->
+
+<!--        .file-input-container {-->
+<!--            position: relative;-->
+<!--            display: inline-block;-->
+<!--            margin-bottom: 20px;-->
+<!--        }-->
+
+<!--        .file-input {-->
+<!--            position: absolute;-->
+<!--            opacity: 0;-->
+<!--            width: 100%;-->
+<!--            height: 100%;-->
+<!--            cursor: pointer;-->
+<!--        }-->
+
+<!--        .file-input-label {-->
+<!--            display: inline-block;-->
+<!--            padding: 15px 40px;-->
+<!--            background: linear-gradient(45deg, #007bff, #0056b3);-->
+<!--            color: white;-->
+<!--            border-radius: 30px;-->
+<!--            cursor: pointer;-->
+<!--            font-weight: 500;-->
+<!--            font-size: 16px;-->
+<!--            transition: all 0.3s ease;-->
+<!--            box-shadow: 0 6px 20px rgba(0,123,255,0.3);-->
+<!--        }-->
+
+<!--        .file-input-label:hover {-->
+<!--            transform: translateY(-3px);-->
+<!--            box-shadow: 0 10px 30px rgba(0,123,255,0.4);-->
+<!--        }-->
+
+<!--        .upload-btn {-->
+<!--            padding: 15px 50px;-->
+<!--            background: linear-gradient(45deg, #28a745, #20c997);-->
+<!--            color: white;-->
+<!--            border: none;-->
+<!--            border-radius: 30px;-->
+<!--            font-size: 16px;-->
+<!--            font-weight: 500;-->
+<!--            cursor: pointer;-->
+<!--            transition: all 0.3s ease;-->
+<!--            box-shadow: 0 6px 20px rgba(40,167,69,0.3);-->
+<!--            margin-left: 15px;-->
+<!--        }-->
+
+<!--        .upload-btn:hover {-->
+<!--            transform: translateY(-3px);-->
+<!--            box-shadow: 0 10px 30px rgba(40,167,69,0.4);-->
+<!--        }-->
+
+<!--        .upload-btn:disabled {-->
+<!--            opacity: 0.6;-->
+<!--            cursor: not-allowed;-->
+<!--            transform: none;-->
+<!--        }-->
+
+<!--        .qr-section {-->
+<!--            background: linear-gradient(135deg, #fff3cd, #ffffff);-->
+<!--            border-radius: 20px;-->
+<!--            padding: 40px;-->
+<!--            text-align: center;-->
+<!--            border: 2px solid #ffeaa7;-->
+<!--        }-->
+
+<!--        .qr-section h2 {-->
+<!--            color: #2c3e50;-->
+<!--            margin-bottom: 20px;-->
+<!--        }-->
+
+<!--        .qr-code {-->
+<!--            max-width: 200px;-->
+<!--            margin: 20px auto;-->
+<!--            border-radius: 10px;-->
+<!--            box-shadow: 0 8px 25px rgba(0,0,0,0.1);-->
+<!--        }-->
+
+<!--        .status-message {-->
+<!--            margin: 20px 0;-->
+<!--            padding: 15px;-->
+<!--            border-radius: 10px;-->
+<!--            display: none;-->
+<!--        }-->
+
+<!--        .status-message.success {-->
+<!--            background: linear-gradient(135deg, #d4edda, #ffffff);-->
+<!--            color: #155724;-->
+<!--            border: 2px solid #c3e6cb;-->
+<!--        }-->
+
+<!--        .status-message.error {-->
+<!--            background: linear-gradient(135deg, #f8d7da, #ffffff);-->
+<!--            color: #721c24;-->
+<!--            border: 2px solid #f5c6cb;-->
+<!--        }-->
+
+<!--        .nav-actions {-->
+<!--            margin-top: 30px;-->
+<!--            display: flex;-->
+<!--            gap: 15px;-->
+<!--            justify-content: center;-->
+<!--        }-->
+
+<!--        .nav-btn {-->
+<!--            padding: 12px 24px;-->
+<!--            background: linear-gradient(45deg, #6c757d, #5a6268);-->
+<!--            color: white;-->
+<!--            text-decoration: none;-->
+<!--            border-radius: 25px;-->
+<!--            font-size: 14px;-->
+<!--            font-weight: 500;-->
+<!--            transition: all 0.3s ease;-->
+<!--            box-shadow: 0 4px 15px rgba(108,117,125,0.3);-->
+<!--        }-->
+
+<!--        .nav-btn:hover {-->
+<!--            transform: translateY(-2px);-->
+<!--            box-shadow: 0 8px 25px rgba(108,117,125,0.4);-->
+<!--        }-->
+
+<!--        .loading {-->
+<!--            display: none;-->
+<!--            text-align: center;-->
+<!--            margin: 20px 0;-->
+<!--        }-->
+
+<!--        .spinner {-->
+<!--            border: 4px solid #f3f3f3;-->
+<!--            border-top: 4px solid #4CAF50;-->
+<!--            border-radius: 50%;-->
+<!--            width: 40px;-->
+<!--            height: 40px;-->
+<!--            animation: spin 1s linear infinite;-->
+<!--            margin: 0 auto 15px;-->
+<!--        }-->
+
+<!--        @keyframes spin {-->
+<!--            0% { transform: rotate(0deg); }-->
+<!--            100% { transform: rotate(360deg); }-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--    <div class="container">-->
+<!--        <div class="header">-->
+<!--            <h1>📄 文档查看器</h1>-->
+<!--            <p>支持 Word、PPT、Excel 文档上传与在线查看</p>-->
+<!--        </div>-->
+
+<!--        <div class="main-content">-->
+<!--            &lt;!&ndash; 上传区域 &ndash;&gt;-->
+<!--            <div class="upload-section">-->
+<!--                <h2 style="text-align: center; margin-bottom: 30px; color: #2c3e50;">选择文档类型</h2>-->
+
+<!--                <div class="file-types">-->
+<!--                    <div class="file-type" onclick="selectFileType('word')">-->
+<!--                        <div class="icon">📝</div>-->
+<!--                        <h3>Word 文档</h3>-->
+<!--                        <p>支持 .docx 格式</p>-->
+<!--                    </div>-->
+<!--                    <div class="file-type" onclick="selectFileType('ppt')">-->
+<!--                        <div class="icon">📊</div>-->
+<!--                        <h3>PPT 演示文稿</h3>-->
+<!--                        <p>支持 .pptx 格式</p>-->
+<!--                    </div>-->
+<!--                    <div class="file-type" onclick="selectFileType('excel')">-->
+<!--                        <div class="icon">📈</div>-->
+<!--                        <h3>Excel 表格</h3>-->
+<!--                        <p>支持 .xlsx .xls 格式</p>-->
+<!--                    </div>-->
+<!--                </div>-->
+
+<!--                <form class="upload-form" enctype="multipart/form-data">-->
+<!--                    <div class="file-input-container">-->
+<!--                        <input type="file" id="fileInput" class="file-input" accept=".docx,.pptx,.xlsx,.xls">-->
+<!--                        <label for="fileInput" class="file-input-label">-->
+<!--                            📁 选择文件-->
+<!--                        </label>-->
+<!--                    </div>-->
+<!--                    <button type="button" class="upload-btn" onclick="uploadFile()">-->
+<!--                        🚀 上传文档-->
+<!--                    </button>-->
+<!--                </form>-->
+
+<!--                <div class="loading">-->
+<!--                    <div class="spinner"></div>-->
+<!--                    <p>正在处理文档...</p>-->
+<!--                </div>-->
+
+<!--                <div class="status-message" id="statusMessage"></div>-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; 二维码区域 &ndash;&gt;-->
+<!--            <div class="qr-section">-->
+<!--                <h2>📱 扫描二维码查看</h2>-->
+<!--                <p style="color: #6c757d; margin-bottom: 20px;">上传文档后，扫描二维码在手机上查看内容</p>-->
+<!--                <div id="qrContainer">-->
+<!--                    <p style="color: #6c757d;">上传文档后将生成二维码</p>-->
+<!--                </div>-->
+
+<!--                <div class="nav-actions">-->
+<!--                    <a href="#" class="nav-btn" onclick="newSession()">🔄 新建会话</a>-->
+<!--                    <a href="/qr" class="nav-btn">🔍 查看二维码页面</a>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    <script>-->
+<!--        let selectedFileType = null;-->
+
+<!--        function selectFileType(type) {-->
+<!--            selectedFileType = type;-->
+
+<!--            // 更新UI-->
+<!--            document.querySelectorAll('.file-type').forEach(el => {-->
+<!--                el.classList.remove('selected');-->
+<!--            });-->
+<!--            event.target.closest('.file-type').classList.add('selected');-->
+
+<!--            // 更新文件输入框的accept属性-->
+<!--            const fileInput = document.getElementById('fileInput');-->
+<!--            switch(type) {-->
+<!--                case 'word':-->
+<!--                    fileInput.accept = '.docx';-->
+<!--                    break;-->
+<!--                case 'ppt':-->
+<!--                    fileInput.accept = '.pptx';-->
+<!--                    break;-->
+<!--                case 'excel':-->
+<!--                    fileInput.accept = '.xlsx,.xls';-->
+<!--                    break;-->
+<!--            }-->
+<!--        }-->
+
+<!--        function showStatus(message, isError = false) {-->
+<!--            const statusEl = document.getElementById('statusMessage');-->
+<!--            statusEl.textContent = message;-->
+<!--            statusEl.className = 'status-message ' + (isError ? 'error' : 'success');-->
+<!--            statusEl.style.display = 'block';-->
+
+<!--            setTimeout(() => {-->
+<!--                statusEl.style.display = 'none';-->
+<!--            }, 5000);-->
+<!--        }-->
+
+<!--        function showLoading(show = true) {-->
+<!--            document.querySelector('.loading').style.display = show ? 'block' : 'none';-->
+<!--        }-->
+
+<!--        async function uploadFile() {-->
+<!--            if (!selectedFileType) {-->
+<!--                showStatus('请先选择文档类型', true);-->
+<!--                return;-->
+<!--            }-->
+
+<!--            const fileInput = document.getElementById('fileInput');-->
+<!--            const file = fileInput.files[0];-->
+
+<!--            if (!file) {-->
+<!--                showStatus('请选择文件', true);-->
+<!--                return;-->
+<!--            }-->
+
+<!--            showLoading(true);-->
+
+<!--            const formData = new FormData();-->
+<!--            formData.append('file', file);-->
+<!--            formData.append('file_type', selectedFileType);-->
+
+<!--            try {-->
+<!--                const response = await fetch('/upload', {-->
+<!--                    method: 'POST',-->
+<!--                    body: formData-->
+<!--                });-->
+
+<!--                const result = await response.json();-->
+
+<!--                if (result.success) {-->
+<!--                    showStatus('文档上传成功！');-->
+
+<!--                    // 更新二维码显示-->
+<!--                    if (result.qr_filename) {-->
+<!--                        const qrContainer = document.getElementById('qrContainer');-->
+<!--                        let qrHtml = `-->
+<!--                            <img src="/static/${result.qr_filename}" alt="会话二维码" class="qr-code">-->
+<!--                            <p style="margin-top: 15px; color: #2c3e50;">-->
+<!--                                <strong>📋 会话概览</strong><br>-->
+<!--                                会话ID: ${result.session_id}<br>-->
+<!--                                <a href="${result.qr_url}" target="_blank">查看所有文档 →</a>-->
+<!--                            </p>-->
+<!--                        `;-->
+
+<!--                        // 添加直接文档二维码-->
+<!--                        if (result.document_qrs && Object.keys(result.document_qrs).length > 0) {-->
+<!--                            qrHtml += `-->
+<!--                                <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #f0f0f0;">-->
+<!--                                    <p style="color: #2c3e50; margin-bottom: 15px;"><strong>🎯 直接访问文档</strong></p>-->
+<!--                                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">-->
+<!--                            `;-->
+
+<!--                            for (const [docType, qrInfo] of Object.entries(result.document_qrs)) {-->
+<!--                                const icon = docType === 'word' ? '📝' : docType === 'ppt' ? '📊' : '📈';-->
+<!--                                qrHtml += `-->
+<!--                                    <div style="text-align: center; min-width: 120px;">-->
+<!--                                        <img src="/static/${qrInfo.filename}" alt="${qrInfo.type_name}"-->
+<!--                                             style="width: 80px; height: 80px; border-radius: 8px; margin-bottom: 8px;">-->
+<!--                                        <div style="font-size: 12px; color: #666;">-->
+<!--                                            ${icon} ${qrInfo.type_name}-->
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                `;-->
+<!--                            }-->
+
+<!--                            qrHtml += `-->
+<!--                                    </div>-->
+<!--                                    <p style="margin-top: 15px; font-size: 13px; color: #666;">-->
+<!--                                        <a href="/qr/${result.session_id}" target="_blank">查看所有二维码 →</a>-->
+<!--                                    </p>-->
+<!--                                </div>-->
+<!--                            `;-->
+<!--                        }-->
+
+<!--                        qrContainer.innerHTML = qrHtml;-->
+<!--                    }-->
+
+<!--                    // 清空文件输入-->
+<!--                    fileInput.value = '';-->
+<!--                } else {-->
+<!--                    showStatus(result.error || '上传失败', true);-->
+<!--                }-->
+<!--            } catch (error) {-->
+<!--                showStatus('网络错误：' + error.message, true);-->
+<!--            } finally {-->
+<!--                showLoading(false);-->
+<!--            }-->
+<!--        }-->
+
+<!--        async function newSession() {-->
+<!--            try {-->
+<!--                const response = await fetch('/new_session');-->
+<!--                const result = await response.json();-->
+<!--                if (result.success) {-->
+<!--                    location.reload();-->
+<!--                }-->
+<!--            } catch (error) {-->
+<!--                showStatus('创建新会话失败', true);-->
+<!--            }-->
+<!--        }-->
+
+<!--        // 页面加载时获取当前二维码信息-->
+<!--        window.addEventListener('load', async function() {-->
+<!--            try {-->
+<!--                const response = await fetch('/current_qr');-->
+<!--                const result = await response.json();-->
+
+<!--                if (result.has_qr) {-->
+<!--                    const qrContainer = document.getElementById('qrContainer');-->
+<!--                    let qrHtml = `-->
+<!--                        <img src="/static/${result.qr_filename}" alt="会话二维码" class="qr-code">-->
+<!--                        <p style="margin-top: 15px; color: #2c3e50;">-->
+<!--                            <strong>📋 当前会话</strong><br>-->
+<!--                            会话ID: ${result.session_id}<br>-->
+<!--                            已上传 ${result.document_count} 个文档<br>-->
+<!--                            <a href="${result.qr_url}" target="_blank">查看概览 →</a>-->
+<!--                        </p>-->
+<!--                    `;-->
+
+<!--                    // 添加直接文档二维码-->
+<!--                    if (result.document_qrs && Object.keys(result.document_qrs).length > 0) {-->
+<!--                        qrHtml += `-->
+<!--                            <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #f0f0f0;">-->
+<!--                                <p style="color: #2c3e50; margin-bottom: 15px;"><strong>🎯 直接访问</strong></p>-->
+<!--                                <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">-->
+<!--                        `;-->
+
+<!--                        for (const [docType, qrInfo] of Object.entries(result.document_qrs)) {-->
+<!--                            const icon = docType === 'word' ? '📝' : docType === 'ppt' ? '📊' : '📈';-->
+<!--                            qrHtml += `-->
+<!--                                <div style="text-align: center; min-width: 120px;">-->
+<!--                                    <img src="/static/${qrInfo.filename}" alt="${qrInfo.type_name}"-->
+<!--                                         style="width: 80px; height: 80px; border-radius: 8px; margin-bottom: 8px;">-->
+<!--                                    <div style="font-size: 12px; color: #666;">-->
+<!--                                        ${icon} ${qrInfo.type_name}-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                            `;-->
+<!--                        }-->
+
+<!--                        qrHtml += `-->
+<!--                                </div>-->
+<!--                                <p style="margin-top: 15px; font-size: 13px; color: #666;">-->
+<!--                                    <a href="/qr/${result.session_id}" target="_blank">查看完整二维码页面 →</a>-->
+<!--                                </p>-->
+<!--                            </div>-->
+<!--                        `;-->
+<!--                    }-->
+
+<!--                    qrContainer.innerHTML = qrHtml;-->
+<!--                }-->
+<!--            } catch (error) {-->
+<!--                console.log('获取二维码信息失败:', error);-->
+<!--            }-->
+<!--        });-->
+<!--    </script>-->
+<!--</body>-->
+<!--</html>-->
+<!--<!DOCTYPE html>-->
+<!--<html lang="zh-CN">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>文档展示系统</title>-->
+<!--    <style>-->
+<!--        * {-->
+<!--            margin: 0;-->
+<!--            padding: 0;-->
+<!--            box-sizing: border-box;-->
+<!--        }-->
+
+<!--        body {-->
+<!--            font-family: 'Arial', sans-serif;-->
+<!--            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);-->
+<!--            min-height: 100vh;-->
+<!--            padding: 20px;-->
+<!--        }-->
+
+<!--        .container {-->
+<!--            max-width: 1200px;-->
+<!--            margin: 0 auto;-->
+<!--            background: white;-->
+<!--            border-radius: 15px;-->
+<!--            box-shadow: 0 20px 40px rgba(0,0,0,0.1);-->
+<!--            overflow: hidden;-->
+<!--        }-->
+
+<!--        .header {-->
+<!--            background: linear-gradient(45deg, #4CAF50, #2196F3);-->
+<!--            color: white;-->
+<!--            text-align: center;-->
+<!--            padding: 40px 20px;-->
+<!--            position: relative;-->
+<!--        }-->
+
+<!--        .header h1 {-->
+<!--            font-size: 2.5em;-->
+<!--            margin-bottom: 10px;-->
+<!--        }-->
+
+<!--        .header p {-->
+<!--            font-size: 1.2em;-->
+<!--            opacity: 0.9;-->
+<!--        }-->
+
+<!--        .logout-btn {-->
+<!--            position: absolute;-->
+<!--            top: 20px;-->
+<!--            right: 20px;-->
+<!--            background: rgba(255,255,255,0.2);-->
+<!--            color: white;-->
+<!--            border: 2px solid white;-->
+<!--            padding: 8px 16px;-->
+<!--            border-radius: 20px;-->
+<!--            font-size: 14px;-->
+<!--            cursor: pointer;-->
+<!--            transition: all 0.3s ease;-->
+<!--            text-decoration: none;-->
+<!--        }-->
+
+<!--        .logout-btn:hover {-->
+<!--            background: white;-->
+<!--            color: #4CAF50;-->
+<!--        }-->
+
+<!--        .main-content {-->
+<!--            padding: 40px;-->
+<!--        }-->
+
+<!--        .auth-error {-->
+<!--            background: #f8d7da;-->
+<!--            color: #721c24;-->
+<!--            padding: 15px;-->
+<!--            border-radius: 10px;-->
+<!--            margin: 20px 0;-->
+<!--            border: 1px solid #f5c6cb;-->
+<!--            text-align: center;-->
+<!--        }-->
+
+<!--        .auth-error button {-->
+<!--            background: #dc3545;-->
+<!--            color: white;-->
+<!--            border: none;-->
+<!--            padding: 8px 16px;-->
+<!--            border-radius: 5px;-->
+<!--            cursor: pointer;-->
+<!--            margin-left: 10px;-->
+<!--        }-->
+
+<!--        .qr-display-section {-->
+<!--            margin-bottom: 40px;-->
+<!--        }-->
+
+<!--        .qr-result-card {-->
+<!--            background: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);-->
+<!--            color: white;-->
+<!--            border-radius: 20px;-->
+<!--            padding: 30px;-->
+<!--            text-align: center;-->
+<!--            box-shadow: 0 15px 35px rgba(0,0,0,0.1);-->
+<!--        }-->
+
+<!--        .qr-result-card h2 {-->
+<!--            margin-bottom: 15px;-->
+<!--            font-size: 1.8em;-->
+<!--        }-->
+
+<!--        .qr-result-card > p {-->
+<!--            margin-bottom: 25px;-->
+<!--            font-size: 1.1em;-->
+<!--            opacity: 0.9;-->
+<!--        }-->
+
+<!--        .qr-image-container {-->
+<!--            background: white;-->
+<!--            border-radius: 15px;-->
+<!--            padding: 20px;-->
+<!--            margin: 25px auto;-->
+<!--            display: inline-block;-->
+<!--            box-shadow: 0 10px 25px rgba(0,0,0,0.2);-->
+<!--        }-->
+
+<!--        .qr-image-container img {-->
+<!--            max-width: 200px;-->
+<!--            height: auto;-->
+<!--            border-radius: 8px;-->
+<!--        }-->
+
+<!--        .qr-info {-->
+<!--            background: rgba(255,255,255,0.1);-->
+<!--            border-radius: 12px;-->
+<!--            padding: 20px;-->
+<!--            margin: 20px 0;-->
+<!--            text-align: left;-->
+<!--        }-->
+
+<!--        .qr-info p {-->
+<!--            margin-bottom: 8px;-->
+<!--            font-size: 14px;-->
+<!--        }-->
+
+<!--        .qr-info a {-->
+<!--            color: #FFE082;-->
+<!--            text-decoration: none;-->
+<!--            font-weight: bold;-->
+<!--        }-->
+
+<!--        .new-session-btn {-->
+<!--            background: rgba(255,255,255,0.2);-->
+<!--            color: white;-->
+<!--            border: 2px solid white;-->
+<!--            padding: 12px 25px;-->
+<!--            border-radius: 25px;-->
+<!--            font-size: 16px;-->
+<!--            font-weight: bold;-->
+<!--            cursor: pointer;-->
+<!--            transition: all 0.3s ease;-->
+<!--        }-->
+
+<!--        .new-session-btn:hover {-->
+<!--            background: white;-->
+<!--            color: #4CAF50;-->
+<!--        }-->
+
+<!--        .document-sections {-->
+<!--            display: grid;-->
+<!--            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));-->
+<!--            gap: 30px;-->
+<!--            margin-bottom: 40px;-->
+<!--        }-->
+
+<!--        .section-card {-->
+<!--            background: #f8f9fa;-->
+<!--            border-radius: 15px;-->
+<!--            padding: 30px;-->
+<!--            border: 2px solid #e9ecef;-->
+<!--            transition: all 0.3s ease;-->
+<!--        }-->
+
+<!--        .section-card:hover {-->
+<!--            transform: translateY(-5px);-->
+<!--            box-shadow: 0 10px 25px rgba(0,0,0,0.1);-->
+<!--        }-->
+
+<!--        .section-card h2 {-->
+<!--            color: #333;-->
+<!--            margin-bottom: 15px;-->
+<!--            font-size: 1.5em;-->
+<!--        }-->
+
+<!--        .file-upload {-->
+<!--            margin-bottom: 20px;-->
+<!--        }-->
+
+<!--        .file-input-wrapper {-->
+<!--            position: relative;-->
+<!--            display: inline-block;-->
+<!--            cursor: pointer;-->
+<!--            width: 100%;-->
+<!--        }-->
+
+<!--        .file-input {-->
+<!--            position: absolute;-->
+<!--            left: -9999px;-->
+<!--        }-->
+
+<!--        .file-input-label {-->
+<!--            display: block;-->
+<!--            padding: 12px 20px;-->
+<!--            background: #007bff;-->
+<!--            color: white;-->
+<!--            border-radius: 8px;-->
+<!--            text-align: center;-->
+<!--            transition: background 0.3s;-->
+<!--            cursor: pointer;-->
+<!--        }-->
+
+<!--        .file-input-label:hover {-->
+<!--            background: #0056b3;-->
+<!--        }-->
+
+<!--        .upload-btn {-->
+<!--            width: 100%;-->
+<!--            padding: 12px;-->
+<!--            background: #28a745;-->
+<!--            color: white;-->
+<!--            border: none;-->
+<!--            border-radius: 8px;-->
+<!--            font-size: 16px;-->
+<!--            cursor: pointer;-->
+<!--            margin-top: 10px;-->
+<!--            transition: background 0.3s;-->
+<!--        }-->
+
+<!--        .upload-btn:hover {-->
+<!--            background: #218838;-->
+<!--        }-->
+
+<!--        .upload-btn:disabled {-->
+<!--            background: #6c757d;-->
+<!--            cursor: not-allowed;-->
+<!--        }-->
+
+<!--        .loading {-->
+<!--            display: none;-->
+<!--            text-align: center;-->
+<!--            color: #007bff;-->
+<!--            margin-top: 10px;-->
+<!--        }-->
+
+<!--        .file-name {-->
+<!--            margin-top: 10px;-->
+<!--            font-size: 14px;-->
+<!--            color: #666;-->
+<!--        }-->
+
+<!--        .error {-->
+<!--            color: #dc3545;-->
+<!--            margin-top: 10px;-->
+<!--        }-->
+
+<!--        .success {-->
+<!--            color: #28a745;-->
+<!--            margin-top: 10px;-->
+<!--        }-->
+
+<!--        .content-display {-->
+<!--            margin-top: 20px;-->
+<!--            padding: 20px;-->
+<!--            background: white;-->
+<!--            border-radius: 8px;-->
+<!--            border: 1px solid #ddd;-->
+<!--            max-height: 400px;-->
+<!--            overflow-y: auto;-->
+<!--            display: none;-->
+<!--        }-->
+
+<!--        .slide-content {-->
+<!--            border: 1px solid #ddd;-->
+<!--            margin-bottom: 15px;-->
+<!--            border-radius: 8px;-->
+<!--        }-->
+
+<!--        .slide-header {-->
+<!--            background: #f8f9fa;-->
+<!--            padding: 10px 15px;-->
+<!--            font-weight: bold;-->
+<!--            border-bottom: 1px solid #ddd;-->
+<!--        }-->
+
+<!--        .slide-body {-->
+<!--            padding: 15px;-->
+<!--        }-->
+
+<!--        table {-->
+<!--            width: 100%;-->
+<!--            border-collapse: collapse;-->
+<!--        }-->
+
+<!--        table th, table td {-->
+<!--            padding: 8px 12px;-->
+<!--            text-align: left;-->
+<!--            border-bottom: 1px solid #ddd;-->
+<!--        }-->
+
+<!--        table th {-->
+<!--            background-color: #f8f9fa;-->
+<!--            font-weight: bold;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--    <div class="container">-->
+<!--        <div class="header">-->
+<!--            <a href="/logout" class="logout-btn">登出</a>-->
+<!--            <h1>📄 文档展示系统</h1>-->
+<!--            <p>上传并展示您的Word、PPT和Excel文件</p>-->
+<!--        </div>-->
+
+<!--        <div class="main-content">-->
+<!--            &lt;!&ndash; 认证错误提示 &ndash;&gt;-->
+<!--            <div id="authError" class="auth-error" style="display: none;">-->
+<!--                <p>身份验证已过期，请重新登录</p>-->
+<!--                <button onclick="redirectToLogin()">重新登录</button>-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; 二维码展示区域 &ndash;&gt;-->
+<!--            <div class="qr-display-section" id="qrSection" style="display: none;">-->
+<!--                <div class="qr-result-card">-->
+<!--                    <h2>📱 扫描查看文档</h2>-->
+<!--                    <p>文件上传成功！使用手机扫描下方二维码直接查看文档内容</p>-->
+<!--                    <div class="qr-image-container">-->
+<!--                        <img id="qrImage" src="" alt="生成的二维码" />-->
+<!--                    </div>-->
+<!--                    <div class="qr-info">-->
+<!--                        <p><strong>会话ID:</strong> <span id="sessionId"></span></p>-->
+<!--                        <p><strong>直接访问:</strong> <a id="directLink" href="" target="_blank"></a></p>-->
+<!--                        <p><strong>已上传文件:</strong> <span id="fileCount">0</span> 个</p>-->
+<!--                        <p><strong>访问密码:</strong> 123456</p>-->
+<!--                    </div>-->
+<!--                    <button class="new-session-btn" onclick="createNewSession()">创建新会话</button>-->
+<!--                </div>-->
+<!--            </div>-->
+
+<!--            <div class="document-sections">-->
+<!--                &lt;!&ndash; Word文档区域 &ndash;&gt;-->
+<!--                <div class="section-card">-->
+<!--                    <h2>📝 Word文档</h2>-->
+<!--                    <div class="file-upload">-->
+<!--                        <div class="file-input-wrapper">-->
+<!--                            <input type="file" id="wordFile" class="file-input" accept=".docx" data-type="word">-->
+<!--                            <label for="wordFile" class="file-input-label">选择Word文件 (.docx)</label>-->
+<!--                        </div>-->
+<!--                        <div class="file-name" id="wordFileName"></div>-->
+<!--                        <button class="upload-btn" onclick="uploadFile('word')" id="wordUploadBtn" disabled>上传Word文档</button>-->
+<!--                        <div class="loading" id="wordLoading">正在处理文件...</div>-->
+<!--                        <div class="error" id="wordError"></div>-->
+<!--                        <div class="success" id="wordSuccess"></div>-->
+<!--                    </div>-->
+<!--                    <div class="content-display" id="wordContent"></div>-->
+<!--                </div>-->
+
+<!--                &lt;!&ndash; PPT演示文稿区域 &ndash;&gt;-->
+<!--                <div class="section-card">-->
+<!--                    <h2>📊 PPT演示文稿</h2>-->
+<!--                    <div class="file-upload">-->
+<!--                        <div class="file-input-wrapper">-->
+<!--                            <input type="file" id="pptFile" class="file-input" accept=".pptx" data-type="ppt">-->
+<!--                            <label for="pptFile" class="file-input-label">选择PPT文件 (.pptx)</label>-->
+<!--                        </div>-->
+<!--                        <div class="file-name" id="pptFileName"></div>-->
+<!--                        <button class="upload-btn" onclick="uploadFile('ppt')" id="pptUploadBtn" disabled>上传PPT文档</button>-->
+<!--                        <div class="loading" id="pptLoading">正在处理文件...</div>-->
+<!--                        <div class="error" id="pptError"></div>-->
+<!--                        <div class="success" id="pptSuccess"></div>-->
+<!--                    </div>-->
+<!--                    <div class="content-display" id="pptContent"></div>-->
+<!--                </div>-->
+
+<!--                &lt;!&ndash; Excel表格区域 &ndash;&gt;-->
+<!--                <div class="section-card">-->
+<!--                    <h2>📈 Excel表格</h2>-->
+<!--                    <div class="file-upload">-->
+<!--                        <div class="file-input-wrapper">-->
+<!--                            <input type="file" id="excelFile" class="file-input" accept=".xlsx,.xls" data-type="excel">-->
+<!--                            <label for="excelFile" class="file-input-label">选择Excel文件 (.xlsx/.xls)</label>-->
+<!--                        </div>-->
+<!--                        <div class="file-name" id="excelFileName"></div>-->
+<!--                        <button class="upload-btn" onclick="uploadFile('excel')" id="excelUploadBtn" disabled>上传Excel文档</button>-->
+<!--                        <div class="loading" id="excelLoading">正在处理文件...</div>-->
+<!--                        <div class="error" id="excelError"></div>-->
+<!--                        <div class="success" id="excelSuccess"></div>-->
+<!--                    </div>-->
+<!--                    <div class="content-display" id="excelContent"></div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    <script>-->
+<!--        // 处理认证错误的通用函数-->
+<!--        function handleAuthError(response) {-->
+<!--            if (response.status === 401) {-->
+<!--                showAuthError();-->
+<!--                return true;-->
+<!--            }-->
+<!--            return false;-->
+<!--        }-->
+
+<!--        // 显示认证错误-->
+<!--        function showAuthError() {-->
+<!--            document.getElementById('authError').style.display = 'block';-->
+<!--            setTimeout(() => {-->
+<!--                redirectToLogin();-->
+<!--            }, 3000);-->
+<!--        }-->
+
+<!--        // 重定向到登录页面-->
+<!--        function redirectToLogin() {-->
+<!--            window.location.href = '/login';-->
+<!--        }-->
+
+<!--        // 安全的fetch请求包装器-->
+<!--        async function safeFetch(url, options = {}) {-->
+<!--            try {-->
+<!--                const response = await fetch(url, options);-->
+
+<!--                if (handleAuthError(response)) {-->
+<!--                    throw new Error('认证失败');-->
+<!--                }-->
+
+<!--                return response;-->
+<!--            } catch (error) {-->
+<!--                if (error.message === '认证失败') {-->
+<!--                    throw error;-->
+<!--                }-->
+<!--                throw new Error('网络连接失败，请检查网络设置');-->
+<!--            }-->
+<!--        }-->
+
+<!--        // 页面加载时检查是否有当前会话-->
+<!--        window.addEventListener('load', function() {-->
+<!--            checkCurrentSession();-->
+<!--            initFileInputs();-->
+<!--        });-->
+
+<!--        // 初始化文件输入监听器-->
+<!--        function initFileInputs() {-->
+<!--            const fileInputs = [-->
+<!--                { id: 'wordFile', type: 'word' },-->
+<!--                { id: 'pptFile', type: 'ppt' },-->
+<!--                { id: 'excelFile', type: 'excel' }-->
+<!--            ];-->
+
+<!--            fileInputs.forEach(input => {-->
+<!--                const element = document.getElementById(input.id);-->
+<!--                element.addEventListener('change', function() {-->
+<!--                    handleFileSelection(input.type);-->
+<!--                });-->
+<!--            });-->
+<!--        }-->
+
+<!--        // 处理文件选择-->
+<!--        function handleFileSelection(type) {-->
+<!--            const fileInput = document.getElementById(`${type}File`);-->
+<!--            const uploadBtn = document.getElementById(`${type}UploadBtn`);-->
+<!--            const fileName = document.getElementById(`${type}FileName`);-->
+<!--            const errorDiv = document.getElementById(`${type}Error`);-->
+<!--            const successDiv = document.getElementById(`${type}Success`);-->
+
+<!--            // 清除之前的消息-->
+<!--            errorDiv.textContent = '';-->
+<!--            successDiv.textContent = '';-->
+
+<!--            if (fileInput.files.length > 0) {-->
+<!--                uploadBtn.disabled = false;-->
+<!--                fileName.textContent = `已选择: ${fileInput.files[0].name}`;-->
+<!--            } else {-->
+<!--                uploadBtn.disabled = true;-->
+<!--                fileName.textContent = '';-->
+<!--            }-->
+<!--        }-->
+
+<!--        // 检查当前会话-->
+<!--        async function checkCurrentSession() {-->
+<!--            try {-->
+<!--                const response = await safeFetch('/current_qr');-->
+<!--                const data = await response.json();-->
+
+<!--                if (data.has_qr) {-->
+<!--                    showGeneratedQR({-->
+<!--                        qr_filename: data.qr_filename,-->
+<!--                        qr_url: data.qr_url,-->
+<!--                        session_id: data.session_id-->
+<!--                    });-->
+<!--                    document.getElementById('fileCount').textContent = data.document_count;-->
+<!--                }-->
+<!--            } catch (error) {-->
+<!--                if (error.message !== '认证失败') {-->
+<!--                    console.log('获取会话信息失败:', error.message);-->
+<!--                }-->
+<!--            }-->
+<!--        }-->
+
+<!--        // 上传文件函数-->
+<!--        async function uploadFile(type) {-->
+<!--            const fileInput = document.getElementById(`${type}File`);-->
+<!--            const loadingDiv = document.getElementById(`${type}Loading`);-->
+<!--            const errorDiv = document.getElementById(`${type}Error`);-->
+<!--            const successDiv = document.getElementById(`${type}Success`);-->
+<!--            const contentDiv = document.getElementById(`${type}Content`);-->
+<!--            const uploadBtn = document.getElementById(`${type}UploadBtn`);-->
+
+<!--            // 清除之前的消息和内容-->
+<!--            errorDiv.textContent = '';-->
+<!--            successDiv.textContent = '';-->
+<!--            contentDiv.style.display = 'none';-->
+
+<!--            if (!fileInput.files.length) {-->
+<!--                errorDiv.textContent = '请先选择文件';-->
+<!--                return;-->
+<!--            }-->
+
+<!--            const file = fileInput.files[0];-->
+<!--            const formData = new FormData();-->
+<!--            formData.append('file', file);-->
+<!--            formData.append('file_type', type);-->
+
+<!--            // 显示加载状态-->
+<!--            loadingDiv.style.display = 'block';-->
+<!--            uploadBtn.disabled = true;-->
+
+<!--            try {-->
+<!--                const response = await safeFetch('/upload', {-->
+<!--                    method: 'POST',-->
+<!--                    body: formData-->
+<!--                });-->
+
+<!--                const data = await response.json();-->
+
+<!--                if (data.success) {-->
+<!--                    successDiv.textContent = '文件上传并处理成功！';-->
+<!--                    displayContent(type, data.content, data.type);-->
+
+<!--                    // 显示生成的二维码-->
+<!--                    if (data.qr_url) {-->
+<!--                        showGeneratedQR(data);-->
+<!--                    }-->
+<!--                } else {-->
+<!--                    errorDiv.textContent = data.error || '处理文件时出错';-->
+<!--                }-->
+<!--            } catch (error) {-->
+<!--                if (error.message === '认证失败') {-->
+<!--                    return;-->
+<!--                }-->
+<!--                errorDiv.textContent = error.message;-->
+<!--            } finally {-->
+<!--                loadingDiv.style.display = 'none';-->
+<!--                uploadBtn.disabled = false;-->
+<!--            }-->
+<!--        }-->
+
+<!--        // 显示内容函数-->
+<!--        function displayContent(type, content, contentType) {-->
+<!--            const contentDiv = document.getElementById(`${type}Content`);-->
+
+<!--            if (contentType === 'text') {-->
+<!--                contentDiv.innerHTML = `<pre>${content}</pre>`;-->
+<!--            } else if (contentType === 'table') {-->
+<!--                let html = '';-->
+<!--                if (content.error) {-->
+<!--                    html = `<p class="error">${content.error}</p>`;-->
+<!--                } else {-->
+<!--                    for (const [sheetName, tableHtml] of Object.entries(content)) {-->
+<!--                        html += `<h3>工作表: ${sheetName}</h3>${tableHtml}<br>`;-->
+<!--                    }-->
+<!--                }-->
+<!--                contentDiv.innerHTML = html;-->
+<!--            } else if (contentType === 'slides') {-->
+<!--                let html = '';-->
+<!--                if (content[0] && content[0].error) {-->
+<!--                    html = `<p class="error">${content[0].error}</p>`;-->
+<!--                } else {-->
+<!--                    content.forEach(slide => {-->
+<!--                        html += `-->
+<!--                            <div class="slide-content">-->
+<!--                                <div class="slide-header">幻灯片 ${slide.slide_number}</div>-->
+<!--                                <div class="slide-body">-->
+<!--                                    ${slide.content.map(text => `<p>${text}</p>`).join('')}-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                        `;-->
+<!--                    });-->
+<!--                }-->
+<!--                contentDiv.innerHTML = html;-->
+<!--            }-->
+
+<!--            contentDiv.style.display = 'block';-->
+<!--        }-->
+
+<!--        // 显示生成的二维码-->
+<!--        function showGeneratedQR(data) {-->
+<!--            const qrSection = document.getElementById('qrSection');-->
+<!--            const qrImg = document.getElementById('qrImage');-->
+<!--            const sessionIdSpan = document.getElementById('sessionId');-->
+<!--            const directLink = document.getElementById('directLink');-->
+<!--            const fileCount = document.getElementById('fileCount');-->
+
+<!--            // 支持GitHub存储的二维码图片URL-->
+<!--            qrImg.src = data.qr_github_url || data.qr_filename || `/static/${data.qr_filename}`;-->
+<!--            sessionIdSpan.textContent = data.session_id;-->
+<!--            directLink.href = data.qr_url;-->
+<!--            directLink.textContent = data.qr_url;-->
+
+<!--            // 计算上传文件数量-->
+<!--            safeFetch('/current_qr')-->
+<!--                .then(response => response.json())-->
+<!--                .then(result => {-->
+<!--                    if (result.has_qr) {-->
+<!--                        fileCount.textContent = result.document_count;-->
+<!--                    }-->
+<!--                })-->
+<!--                .catch(error => {-->
+<!--                    console.log('更新文件计数失败:', error.message);-->
+<!--                });-->
+
+<!--            qrSection.style.display = 'block';-->
+<!--            qrSection.scrollIntoView({ behavior: 'smooth' });-->
+<!--        }-->
+
+<!--        // 创建新会话-->
+<!--        async function createNewSession() {-->
+<!--            try {-->
+<!--                const response = await safeFetch('/new_session');-->
+<!--                const data = await response.json();-->
+
+<!--                if (data.success) {-->
+<!--                    // 隐藏二维码区域-->
+<!--                    document.getElementById('qrSection').style.display = 'none';-->
+
+<!--                    // 清空所有内容显示区域-->
+<!--                    ['word', 'ppt', 'excel'].forEach(type => {-->
+<!--                        const contentDiv = document.getElementById(`${type}Content`);-->
+<!--                        contentDiv.style.display = 'none';-->
+<!--                        contentDiv.innerHTML = '';-->
+
+<!--                        // 重置文件输入-->
+<!--                        document.getElementById(`${type}File`).value = '';-->
+<!--                        document.getElementById(`${type}FileName`).textContent = '';-->
+<!--                        document.getElementById(`${type}UploadBtn`).disabled = true;-->
+
+<!--                        // 清除状态消息-->
+<!--                        document.getElementById(`${type}Error`).textContent = '';-->
+<!--                        document.getElementById(`${type}Success`).textContent = '';-->
+<!--                    });-->
+
+<!--                    alert('新会话已创建！现在可以上传新的文件。');-->
+<!--                }-->
+<!--            } catch (error) {-->
+<!--                if (error.message === '认证失败') {-->
+<!--                    return;-->
+<!--                }-->
+<!--                alert('创建新会话失败: ' + error.message);-->
+<!--            }-->
+<!--        }-->
+
+<!--        // 页面可见性检查-->
+<!--        document.addEventListener('visibilitychange', function() {-->
+<!--            if (!document.hidden) {-->
+<!--                checkCurrentSession();-->
+<!--            }-->
+<!--        });-->
+<!--    </script>-->
+<!--</body>-->
+<!--</html>-->

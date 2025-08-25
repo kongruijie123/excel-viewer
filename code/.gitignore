@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Excel临时文件
+~$*.xlsx
+~$*.xls
+
+# IDE
+.vscode/
+.idea/
+
+# 日志文件
+*.log
+
+# 原始Excel文件（可选，如果不想公开Excel源文件）
+# excel_files/

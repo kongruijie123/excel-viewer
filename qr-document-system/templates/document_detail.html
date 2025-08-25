@@ -1,0 +1,1738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文档详情查看器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            background: linear-gradient(45deg, #4CAF50, #2196F3);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: rotate(45deg);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: translateX(-100%) rotate(45deg); }
+            50% { transform: translateX(100%) rotate(45deg); }
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            position: relative;
+            z-index: 1;
+            opacity: 0.9;
+        }
+
+        .nav-bar {
+            background: rgba(248, 249, 250, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 40px;
+            border-bottom: 1px solid rgba(221, 221, 221, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,123,255,0.3);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,123,255,0.4);
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        /* 文档类型选择器 */
+        .doc-type-selector {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            gap: 10px;
+        }
+
+        .doc-type-btn {
+            padding: 12px 24px;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            color: #6c757d;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .doc-type-btn.active {
+            background: linear-gradient(45deg, #4CAF50, #2196F3);
+            color: white;
+            border-color: transparent;
+            transform: scale(1.05);
+        }
+
+        .doc-type-btn:hover:not(.active) {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        /* Word样式 */
+        .word-section {
+            display: none;
+        }
+
+        .word-section.active {
+            display: block;
+        }
+
+        .font-controls {
+            margin-bottom: 30px;
+            text-align: center;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .font-btn {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,123,255,0.2);
+        }
+
+        .font-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,123,255,0.3);
+        }
+
+        .font-size-display {
+            display: inline-block;
+            margin: 0 15px;
+            font-weight: bold;
+            font-size: 16px;
+            color: #495057;
+        }
+
+        .word-content {
+            line-height: 1.8;
+            font-size: 16px;
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            border-left: 4px solid #4CAF50;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        /* PPT样式 */
+        .ppt-section {
+            display: none;
+        }
+
+        .ppt-section.active {
+            display: block;
+        }
+
+        .ppt-controls {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .ppt-controls button {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(40,167,69,0.2);
+        }
+
+        .ppt-controls button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40,167,69,0.3);
+        }
+
+        .ppt-controls button:disabled {
+            background: linear-gradient(45deg, #6c757d, #5a6268);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .slide-counter {
+            margin: 0 20px;
+            font-weight: bold;
+            color: #495057;
+            font-size: 18px;
+        }
+
+        .slide {
+            display: none;
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            padding: 40px;
+            border-radius: 15px;
+            margin: 20px 0;
+            min-height: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .slide.active {
+            display: block;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .slide h2 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #4CAF50;
+            font-size: 1.8em;
+        }
+
+        .slide p {
+            margin-bottom: 20px;
+            line-height: 1.8;
+            color: #495057;
+            font-size: 16px;
+        }
+
+        /* Excel样式 */
+        .excel-section {
+            display: none;
+        }
+
+        .excel-section.active {
+            display: block;
+        }
+
+        .excel-controls {
+            margin-bottom: 30px;
+            text-align: center;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .sheet-btn {
+            background: linear-gradient(45deg, #ffc107, #ff9800);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 8px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255,193,7,0.2);
+        }
+
+        .sheet-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255,193,7,0.3);
+        }
+
+        .sheet-btn.active {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            transform: scale(1.05);
+        }
+
+        .sheet {
+            display: none;
+            overflow-x: auto;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .sheet.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            background: white;
+        }
+
+        table th, table td {
+            padding: 12px 15px;
+            text-align: left;
+            border: 1px solid #dee2e6;
+        }
+
+        table th {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        table tr:hover {
+            background-color: #e3f2fd;
+            transition: background-color 0.3s ease;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.6;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 4px solid #007bff;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .error {
+            color: #dc3545;
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(135deg, #ffe6e6, #ffcccc);
+            border-radius: 15px;
+            border: 2px solid #ff6b6b;
+        }
+
+        .demo-content {
+            text-align: center;
+            color: #6c757d;
+            padding: 40px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 id="header-title">📄 文档查看器</h1>
+            <p id="header-subtitle">支持Word、PPT、Excel多种格式</p>
+            <p style="font-size: 14px; opacity: 0.9;">演示版本 - 2025</p>
+        </div>
+
+        <div class="nav-bar">
+            <span>文档管理系统</span>
+            <div>
+                <a href="#" class="nav-btn" onclick="resetDemo()">🔄 重置</a>
+                <a href="#" class="nav-btn">🏠 主页</a>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- 文档类型选择器 -->
+            <div class="doc-type-selector">
+                <button class="doc-type-btn active" onclick="showDocType('word')">📝 Word文档</button>
+                <button class="doc-type-btn" onclick="showDocType('ppt')">📊 PPT演示文稿</button>
+                <button class="doc-type-btn" onclick="showDocType('excel')">📈 Excel表格</button>
+            </div>
+
+            <!-- Word文档部分 -->
+            <div class="word-section active" id="word-section">
+                <div class="font-controls">
+                    <button class="font-btn" onclick="changeFontSize(-2)">字体 A-</button>
+                    <span class="font-size-display" id="font-size">16px</span>
+                    <button class="font-btn" onclick="changeFontSize(2)">字体 A+</button>
+                    <button class="font-btn" onclick="resetFontSize()">重置</button>
+                </div>
+                <div class="word-content" id="word-content">
+                    <pre>这是一个Word文档的示例内容。
+
+您可以使用上面的按钮来调整字体大小。
+
+这个演示展示了如何在网页中显示和控制Word文档的显示效果。
+
+文档内容支持：
+• 字体大小调整
+• 格式保持
+• 响应式显示
+
+这是一个功能完整的文档查看器示例。</pre>
+                </div>
+            </div>
+
+            <!-- PPT演示文稿部分 -->
+            <div class="ppt-section" id="ppt-section">
+                <div class="ppt-controls">
+                    <button onclick="prevSlide()" id="prev-btn">← 上一张</button>
+                    <span class="slide-counter" id="slide-counter">1 / 4</span>
+                    <button onclick="nextSlide()" id="next-btn">下一张 →</button>
+                </div>
+
+                <div class="slide active" id="slide-1">
+                    <h2>幻灯片 1 - 欢迎</h2>
+                    <p>欢迎使用PPT查看器</p>
+                    <p>这是第一张幻灯片，展示了基本的功能。</p>
+                    <p>您可以使用按钮或键盘左右箭头键来导航。</p>
+                </div>
+
+                <div class="slide" id="slide-2">
+                    <h2>幻灯片 2 - 功能特点</h2>
+                    <p>主要功能包括：</p>
+                    <p>• 流畅的幻灯片切换动画</p>
+                    <p>• 键盘导航支持</p>
+                    <p>• 响应式设计</p>
+                    <p>• 现代化的用户界面</p>
+                </div>
+
+                <div class="slide" id="slide-3">
+                    <h2>幻灯片 3 - 技术特色</h2>
+                    <p>技术实现：</p>
+                    <p>• 纯HTML/CSS/JavaScript</p>
+                    <p>• 无需外部依赖</p>
+                    <p>• 现代浏览器兼容</p>
+                    <p>• 移动设备友好</p>
+                </div>
+
+                <div class="slide" id="slide-4">
+                    <h2>幻灯片 4 - 总结</h2>
+                    <p>感谢您的查看！</p>
+                    <p>这个演示展示了如何创建一个功能完整的PPT查看器。</p>
+                    <p>所有功能都已正常工作，可以直接使用。</p>
+                </div>
+            </div>
+
+            <!-- Excel表格部分 -->
+            <div class="excel-section" id="excel-section">
+                <div class="excel-controls">
+                    <button class="sheet-btn active" onclick="showSheet(1, this)">销售数据</button>
+                    <button class="sheet-btn" onclick="showSheet(2, this)">财务报表</button>
+                    <button class="sheet-btn" onclick="showSheet(3, this)">员工信息</button>
+                </div>
+
+                <div class="sheet active" id="sheet-1">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>产品</th>
+                                <th>销售额</th>
+                                <th>数量</th>
+                                <th>客户</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2025-08-01</td>
+                                <td>笔记本电脑</td>
+                                <td>¥8,999</td>
+                                <td>1</td>
+                                <td>张三</td>
+                            </tr>
+                            <tr>
+                                <td>2025-08-02</td>
+                                <td>鼠标</td>
+                                <td>¥199</td>
+                                <td>5</td>
+                                <td>李四</td>
+                            </tr>
+                            <tr>
+                                <td>2025-08-03</td>
+                                <td>键盘</td>
+                                <td>¥599</td>
+                                <td>2</td>
+                                <td>王五</td>
+                            </tr>
+                            <tr>
+                                <td>2025-08-04</td>
+                                <td>显示器</td>
+                                <td>¥2,999</td>
+                                <td>1</td>
+                                <td>赵六</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="sheet" id="sheet-2">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>项目</th>
+                                <th>Q1</th>
+                                <th>Q2</th>
+                                <th>Q3</th>
+                                <th>Q4</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>收入</td>
+                                <td>¥120,000</td>
+                                <td>¥135,000</td>
+                                <td>¥145,000</td>
+                                <td>¥160,000</td>
+                            </tr>
+                            <tr>
+                                <td>支出</td>
+                                <td>¥85,000</td>
+                                <td>¥92,000</td>
+                                <td>¥98,000</td>
+                                <td>¥105,000</td>
+                            </tr>
+                            <tr>
+                                <td>利润</td>
+                                <td>¥35,000</td>
+                                <td>¥43,000</td>
+                                <td>¥47,000</td>
+                                <td>¥55,000</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="sheet" id="sheet-3">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>姓名</th>
+                                <th>部门</th>
+                                <th>职位</th>
+                                <th>入职时间</th>
+                                <th>薪资</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>张小明</td>
+                                <td>技术部</td>
+                                <td>高级工程师</td>
+                                <td>2023-03-15</td>
+                                <td>¥18,000</td>
+                            </tr>
+                            <tr>
+                                <td>李小红</td>
+                                <td>销售部</td>
+                                <td>销售经理</td>
+                                <td>2022-08-20</td>
+                                <td>¥15,000</td>
+                            </tr>
+                            <tr>
+                                <td>王小华</td>
+                                <td>市场部</td>
+                                <td>市场专员</td>
+                                <td>2024-01-10</td>
+                                <td>¥12,000</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentFontSize = 16;
+        let currentSlide = 1;
+        const totalSlides = 4;
+
+        // 文档类型切换
+        function showDocType(type) {
+            // 隐藏所有部分
+            document.querySelectorAll('.word-section, .ppt-section, .excel-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // 更新按钮状态
+            document.querySelectorAll('.doc-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // 显示选中的部分
+            const section = document.getElementById(type + '-section');
+            const button = event.target;
+
+            if (section) {
+                section.classList.add('active');
+            }
+
+            if (button) {
+                button.classList.add('active');
+            }
+
+            // 更新标题
+            const titles = {
+                'word': '📝 Word文档',
+                'ppt': '📊 PPT演示文稿',
+                'excel': '📈 Excel表格'
+            };
+
+            const headerTitle = document.getElementById('header-title');
+            if (headerTitle && titles[type]) {
+                headerTitle.textContent = titles[type];
+            }
+        }
+
+        // Word字体控制
+        function changeFontSize(delta) {
+            currentFontSize += delta;
+            if (currentFontSize < 12) currentFontSize = 12;
+            if (currentFontSize > 32) currentFontSize = 32;
+
+            updateFontSize();
+        }
+
+        function resetFontSize() {
+            currentFontSize = 16;
+            updateFontSize();
+        }
+
+        function updateFontSize() {
+            const content = document.getElementById('word-content');
+            const display = document.getElementById('font-size');
+
+            if (content) {
+                content.style.fontSize = currentFontSize + 'px';
+            }
+            if (display) {
+                display.textContent = currentFontSize + 'px';
+            }
+        }
+
+        // PPT控制
+        function showSlide(slideNum) {
+            if (slideNum < 1 || slideNum > totalSlides) return;
+
+            // 隐藏所有幻灯片
+            document.querySelectorAll('.slide').forEach(slide => {
+                slide.classList.remove('active');
+            });
+
+            // 显示当前幻灯片
+            const slide = document.getElementById('slide-' + slideNum);
+            if (slide) {
+                slide.classList.add('active');
+            }
+
+            // 更新计数器
+            const counter = document.getElementById('slide-counter');
+            if (counter) {
+                counter.textContent = slideNum + ' / ' + totalSlides;
+            }
+
+            // 更新按钮状态
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            if (prevBtn) prevBtn.disabled = (slideNum === 1);
+            if (nextBtn) nextBtn.disabled = (slideNum === totalSlides);
+
+            currentSlide = slideNum;
+        }
+
+        function prevSlide() {
+            if (currentSlide > 1) {
+                showSlide(currentSlide - 1);
+            }
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides) {
+                showSlide(currentSlide + 1);
+            }
+        }
+
+        // Excel工作表切换
+        function showSheet(sheetNum, clickedBtn) {
+            // 隐藏所有工作表
+            document.querySelectorAll('.sheet').forEach(sheet => {
+                sheet.classList.remove('active');
+            });
+
+            // 显示选中的工作表
+            const sheet = document.getElementById('sheet-' + sheetNum);
+            if (sheet) {
+                sheet.classList.add('active');
+            }
+
+            // 更新按钮状态
+            document.querySelectorAll('.sheet-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            if (clickedBtn) {
+                clickedBtn.classList.add('active');
+            }
+        }
+
+        // 键盘事件
+        document.addEventListener('keydown', function(event) {
+            // 只在PPT部分激活时处理键盘事件
+            const pptSection = document.getElementById('ppt-section');
+            if (pptSection && pptSection.classList.contains('active')) {
+                if (event.key === 'ArrowLeft') {
+                    event.preventDefault();
+                    prevSlide();
+                } else if (event.key === 'ArrowRight') {
+                    event.preventDefault();
+                    nextSlide();
+                }
+            }
+        });
+
+        // 重置演示
+        function resetDemo() {
+            // 重置到Word文档
+            showDocType('word');
+
+            // 重置字体大小
+            resetFontSize();
+
+            // 重置PPT到第一张
+            showSlide(1);
+
+            // 重置Excel到第一个表格
+            const firstSheetBtn = document.querySelector('.sheet-btn');
+            if (firstSheetBtn) {
+                showSheet(1, firstSheetBtn);
+            }
+        }
+
+        // 初始化
+        window.addEventListener('load', function() {
+            // 初始化PPT
+            showSlide(1);
+
+            // 初始化字体大小
+            updateFontSize();
+
+            console.log('文档查看器已加载完成');
+        });
+    </script>
+</body>
+</html>
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="zh-CN">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>{{ doc_data.filename }} - Office查看器</title>-->
+<!--    <style>-->
+<!--        * {-->
+<!--            margin: 0;-->
+<!--            padding: 0;-->
+<!--            box-sizing: border-box;-->
+<!--        }-->
+
+<!--        body {-->
+<!--            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;-->
+<!--            background: #f3f2f1;-->
+<!--            min-height: 100vh;-->
+<!--        }-->
+
+<!--        /* Office风格顶栏 */-->
+<!--        .office-header {-->
+<!--            background: #0078d4;-->
+<!--            color: white;-->
+<!--            padding: 12px 20px;-->
+<!--            display: flex;-->
+<!--            justify-content: space-between;-->
+<!--            align-items: center;-->
+<!--            box-shadow: 0 2px 4px rgba(0,0,0,0.1);-->
+<!--        }-->
+
+<!--        .office-title {-->
+<!--            display: flex;-->
+<!--            align-items: center;-->
+<!--            gap: 12px;-->
+<!--        }-->
+
+<!--        .office-icon {-->
+<!--            font-size: 1.5em;-->
+<!--        }-->
+
+<!--        .file-info h1 {-->
+<!--            font-size: 1.2em;-->
+<!--            font-weight: 600;-->
+<!--        }-->
+
+<!--        .file-info p {-->
+<!--            font-size: 0.85em;-->
+<!--            opacity: 0.9;-->
+<!--        }-->
+
+<!--        .header-actions {-->
+<!--            display: flex;-->
+<!--            gap: 10px;-->
+<!--        }-->
+
+<!--        .header-btn {-->
+<!--            padding: 8px 16px;-->
+<!--            background: rgba(255,255,255,0.2);-->
+<!--            color: white;-->
+<!--            text-decoration: none;-->
+<!--            border-radius: 4px;-->
+<!--            font-size: 0.9em;-->
+<!--            transition: background 0.2s;-->
+<!--        }-->
+
+<!--        .header-btn:hover {-->
+<!--            background: rgba(255,255,255,0.3);-->
+<!--        }-->
+
+<!--        /* Office风格工具栏 */-->
+<!--        .office-toolbar {-->
+<!--            background: #faf9f8;-->
+<!--            border-bottom: 1px solid #edebe9;-->
+<!--            padding: 8px 20px;-->
+<!--            display: flex;-->
+<!--            align-items: center;-->
+<!--            gap: 15px;-->
+<!--            flex-wrap: wrap;-->
+<!--        }-->
+
+<!--        .toolbar-group {-->
+<!--            display: flex;-->
+<!--            align-items: center;-->
+<!--            gap: 8px;-->
+<!--            padding: 0 12px;-->
+<!--            border-right: 1px solid #edebe9;-->
+<!--        }-->
+
+<!--        .toolbar-group:last-child {-->
+<!--            border-right: none;-->
+<!--        }-->
+
+<!--        .toolbar-btn {-->
+<!--            padding: 6px 12px;-->
+<!--            border: 1px solid transparent;-->
+<!--            border-radius: 3px;-->
+<!--            background: none;-->
+<!--            cursor: pointer;-->
+<!--            font-size: 0.9em;-->
+<!--            transition: all 0.2s;-->
+<!--        }-->
+
+<!--        .toolbar-btn:hover {-->
+<!--            background: #e1dfdd;-->
+<!--            border-color: #c8c6c4;-->
+<!--        }-->
+
+<!--        .toolbar-btn.active {-->
+<!--            background: #0078d4;-->
+<!--            color: white;-->
+<!--            border-color: #0078d4;-->
+<!--        }-->
+
+<!--        /* 主要内容区域 */-->
+<!--        .office-content {-->
+<!--            height: calc(100vh - 120px);-->
+<!--            overflow: hidden;-->
+<!--            display: flex;-->
+<!--        }-->
+
+<!--        /* 文档查看区域 */-->
+<!--        .document-viewer {-->
+<!--            flex: 1;-->
+<!--            background: white;-->
+<!--            overflow: auto;-->
+<!--            position: relative;-->
+<!--        }-->
+
+<!--        /* ======================-->
+<!--           Word文档样式-->
+<!--        ====================== */-->
+<!--        .word-page {-->
+<!--            max-width: 800px;-->
+<!--            margin: 40px auto;-->
+<!--            background: white;-->
+<!--            box-shadow: 0 4px 12px rgba(0,0,0,0.1);-->
+<!--            border-radius: 6px;-->
+<!--            overflow: hidden;-->
+<!--        }-->
+
+<!--        .word-content {-->
+<!--            padding: 50px 60px;-->
+<!--            line-height: 1.8;-->
+<!--            font-size: 14px;-->
+<!--            color: #323130;-->
+<!--            font-family: 'Times New Roman', serif;-->
+<!--            min-height: 800px;-->
+<!--        }-->
+
+<!--        .word-content pre {-->
+<!--            white-space: pre-wrap;-->
+<!--            word-wrap: break-word;-->
+<!--            font-family: 'Times New Roman', serif;-->
+<!--            line-height: inherit;-->
+<!--        }-->
+
+<!--        /* ======================-->
+<!--           PPT演示文稿样式-->
+<!--        ====================== */-->
+<!--        .ppt-viewer {-->
+<!--            height: 100%;-->
+<!--            display: flex;-->
+<!--            flex-direction: column;-->
+<!--        }-->
+
+<!--        .slide-navigation {-->
+<!--            background: #faf9f8;-->
+<!--            padding: 12px 20px;-->
+<!--            border-bottom: 1px solid #edebe9;-->
+<!--            display: flex;-->
+<!--            justify-content: center;-->
+<!--            align-items: center;-->
+<!--            gap: 20px;-->
+<!--        }-->
+
+<!--        .nav-button {-->
+<!--            padding: 8px 16px;-->
+<!--            border: 1px solid #c8c6c4;-->
+<!--            border-radius: 3px;-->
+<!--            background: white;-->
+<!--            cursor: pointer;-->
+<!--            font-size: 0.9em;-->
+<!--            display: flex;-->
+<!--            align-items: center;-->
+<!--            gap: 6px;-->
+<!--        }-->
+
+<!--        .nav-button:hover:not(:disabled) {-->
+<!--            background: #f3f2f1;-->
+<!--            border-color: #a19f9d;-->
+<!--        }-->
+
+<!--        .nav-button:disabled {-->
+<!--            opacity: 0.5;-->
+<!--            cursor: not-allowed;-->
+<!--        }-->
+
+<!--        .slide-counter {-->
+<!--            font-weight: 600;-->
+<!--            color: #323130;-->
+<!--            font-size: 0.95em;-->
+<!--        }-->
+
+<!--        .slide-container {-->
+<!--            flex: 1;-->
+<!--            display: flex;-->
+<!--            justify-content: center;-->
+<!--            align-items: center;-->
+<!--            padding: 20px;-->
+<!--            background: #f3f2f1;-->
+<!--        }-->
+
+<!--        .slide {-->
+<!--            width: 90%;-->
+<!--            max-width: 900px;-->
+<!--            aspect-ratio: 16/9;-->
+<!--            background: white;-->
+<!--            border-radius: 8px;-->
+<!--            box-shadow: 0 8px 24px rgba(0,0,0,0.15);-->
+<!--            padding: 40px;-->
+<!--            display: none;-->
+<!--            overflow-y: auto;-->
+<!--        }-->
+
+<!--        .slide.active {-->
+<!--            display: block;-->
+<!--            animation: slideInFade 0.4s ease-out;-->
+<!--        }-->
+
+<!--        @keyframes slideInFade {-->
+<!--            from { opacity: 0; transform: translateX(20px); }-->
+<!--            to { opacity: 1; transform: translateX(0); }-->
+<!--        }-->
+
+<!--        .slide h2 {-->
+<!--            color: #0078d4;-->
+<!--            font-size: 2em;-->
+<!--            margin-bottom: 30px;-->
+<!--            border-bottom: 3px solid #0078d4;-->
+<!--            padding-bottom: 10px;-->
+<!--        }-->
+
+<!--        .slide p {-->
+<!--            font-size: 1.1em;-->
+<!--            line-height: 1.6;-->
+<!--            margin-bottom: 20px;-->
+<!--            color: #323130;-->
+<!--        }-->
+
+<!--        /* ======================-->
+<!--           Excel表格样式-->
+<!--        ====================== */-->
+<!--        .excel-viewer {-->
+<!--            height: 100%;-->
+<!--            display: flex;-->
+<!--            flex-direction: column;-->
+<!--        }-->
+
+<!--        .sheet-tabs {-->
+<!--            background: #faf9f8;-->
+<!--            border-bottom: 1px solid #edebe9;-->
+<!--            display: flex;-->
+<!--            align-items: center;-->
+<!--            padding: 0 20px;-->
+<!--            overflow-x: auto;-->
+<!--        }-->
+
+<!--        .sheet-tab {-->
+<!--            padding: 10px 20px;-->
+<!--            border: none;-->
+<!--            background: none;-->
+<!--            cursor: pointer;-->
+<!--            font-size: 0.9em;-->
+<!--            color: #605e5c;-->
+<!--            border-bottom: 3px solid transparent;-->
+<!--            white-space: nowrap;-->
+<!--            transition: all 0.2s;-->
+<!--        }-->
+
+<!--        .sheet-tab:hover {-->
+<!--            background: #f3f2f1;-->
+<!--        }-->
+
+<!--        .sheet-tab.active {-->
+<!--            color: #0078d4;-->
+<!--            border-bottom-color: #0078d4;-->
+<!--            background: white;-->
+<!--        }-->
+
+<!--        .excel-content {-->
+<!--            flex: 1;-->
+<!--            overflow: auto;-->
+<!--            background: white;-->
+<!--        }-->
+
+<!--        .excel-sheet {-->
+<!--            display: none;-->
+<!--            height: 100%;-->
+<!--        }-->
+
+<!--        .excel-sheet.active {-->
+<!--            display: block;-->
+<!--        }-->
+
+<!--        .excel-table {-->
+<!--            width: 100%;-->
+<!--            border-collapse: collapse;-->
+<!--            font-size: 13px;-->
+<!--            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;-->
+<!--        }-->
+
+<!--        .excel-table th {-->
+<!--            background: #f8f8f8;-->
+<!--            color: #323130;-->
+<!--            font-weight: 600;-->
+<!--            padding: 10px 12px;-->
+<!--            border: 1px solid #d2d0ce;-->
+<!--            text-align: left;-->
+<!--            position: sticky;-->
+<!--            top: 0;-->
+<!--            z-index: 10;-->
+<!--        }-->
+
+<!--        .excel-table th:first-child {-->
+<!--            background: #0078d4;-->
+<!--            color: white;-->
+<!--            text-align: center;-->
+<!--            min-width: 50px;-->
+<!--        }-->
+
+<!--        .excel-table td {-->
+<!--            padding: 8px 12px;-->
+<!--            border: 1px solid #edebe9;-->
+<!--            vertical-align: top;-->
+<!--            transition: background 0.1s;-->
+<!--        }-->
+
+<!--        .excel-table td:first-child {-->
+<!--            background: #f8f8f8;-->
+<!--            font-weight: 600;-->
+<!--            text-align: center;-->
+<!--            color: #605e5c;-->
+<!--        }-->
+
+<!--        .excel-table tbody tr:nth-child(even) td:not(:first-child) {-->
+<!--            background: #fafafa;-->
+<!--        }-->
+
+<!--        .excel-table tbody tr:hover td {-->
+<!--            background: #e1dfdd !important;-->
+<!--        }-->
+
+<!--        .excel-table tbody tr:hover td:first-child {-->
+<!--            background: #d2d0ce !important;-->
+<!--        }-->
+
+<!--        /* 数据类型样式 */-->
+<!--        .cell-number {-->
+<!--            text-align: right;-->
+<!--            color: #0078d4;-->
+<!--            font-weight: 500;-->
+<!--        }-->
+
+<!--        .cell-date {-->
+<!--            color: #107c10;-->
+<!--        }-->
+
+<!--        .cell-formula {-->
+<!--            color: #8764b8;-->
+<!--            font-style: italic;-->
+<!--        }-->
+
+<!--        /* 空状态 */-->
+<!--        .empty-state {-->
+<!--            display: flex;-->
+<!--            flex-direction: column;-->
+<!--            align-items: center;-->
+<!--            justify-content: center;-->
+<!--            height: 400px;-->
+<!--            color: #605e5c;-->
+<!--        }-->
+
+<!--        .empty-icon {-->
+<!--            font-size: 4em;-->
+<!--            margin-bottom: 20px;-->
+<!--            opacity: 0.5;-->
+<!--        }-->
+
+<!--        .error-state {-->
+<!--            background: #fde7e9;-->
+<!--            color: #a4262c;-->
+<!--            padding: 20px;-->
+<!--            border-radius: 4px;-->
+<!--            margin: 20px;-->
+<!--            border: 1px solid #f1b5bb;-->
+<!--        }-->
+
+<!--        /* 响应式设计 */-->
+<!--        @media (max-width: 768px) {-->
+<!--            .office-header {-->
+<!--                padding: 8px 15px;-->
+<!--                flex-direction: column;-->
+<!--                gap: 10px;-->
+<!--            }-->
+
+<!--            .office-toolbar {-->
+<!--                padding: 8px 15px;-->
+<!--                flex-wrap: wrap;-->
+<!--            }-->
+
+<!--            .office-content {-->
+<!--                height: calc(100vh - 140px);-->
+<!--            }-->
+
+<!--            .word-content {-->
+<!--                padding: 30px 20px;-->
+<!--                font-size: 13px;-->
+<!--            }-->
+
+<!--            .slide-container {-->
+<!--                padding: 10px;-->
+<!--            }-->
+
+<!--            .slide {-->
+<!--                width: 95%;-->
+<!--                padding: 20px;-->
+<!--            }-->
+
+<!--            .slide h2 {-->
+<!--                font-size: 1.5em;-->
+<!--            }-->
+
+<!--            .excel-table {-->
+<!--                font-size: 12px;-->
+<!--            }-->
+
+<!--            .excel-table th,-->
+<!--            .excel-table td {-->
+<!--                padding: 6px 8px;-->
+<!--            }-->
+<!--        }-->
+
+<!--        /* 加载动画 */-->
+<!--        .loading {-->
+<!--            display: flex;-->
+<!--            justify-content: center;-->
+<!--            align-items: center;-->
+<!--            height: 300px;-->
+<!--            color: #605e5c;-->
+<!--        }-->
+
+<!--        .spinner {-->
+<!--            width: 32px;-->
+<!--            height: 32px;-->
+<!--            border: 3px solid #f3f2f1;-->
+<!--            border-top: 3px solid #0078d4;-->
+<!--            border-radius: 50%;-->
+<!--            animation: spin 1s linear infinite;-->
+<!--            margin-right: 15px;-->
+<!--        }-->
+
+<!--        @keyframes spin {-->
+<!--            0% { transform: rotate(0deg); }-->
+<!--            100% { transform: rotate(360deg); }-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--    &lt;!&ndash; Office风格顶栏 &ndash;&gt;-->
+<!--    <div class="office-header">-->
+<!--        <div class="office-title">-->
+<!--            <div class="office-icon">-->
+<!--                {% if doc_type == 'word' %}📝-->
+<!--                {% elif doc_type == 'ppt' %}📊-->
+<!--                {% elif doc_type == 'excel' %}📈-->
+<!--                {% else %}📄-->
+<!--                {% endif %}-->
+<!--            </div>-->
+<!--            <div class="file-info">-->
+<!--                <h1>{{ doc_data.filename }}</h1>-->
+<!--                <p>上传时间: {{ doc_data.uploaded_at }}</p>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--        <div class="header-actions">-->
+<!--            {% if session_data and session_data.session_id %}-->
+<!--            <a href="/view/{{ session_data.session_id }}" class="header-btn">← 返回</a>-->
+<!--            {% endif %}-->
+<!--            <a href="/" class="header-btn">🏠 主页</a>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; Office风格工具栏 &ndash;&gt;-->
+<!--    <div class="office-toolbar">-->
+<!--        {% if doc_type == 'word' %}-->
+<!--            <div class="toolbar-group">-->
+<!--                <span>字体大小:</span>-->
+<!--                <button class="toolbar-btn" onclick="adjustWordFontSize(-1)">A-</button>-->
+<!--                <span id="word-font-size">14px</span>-->
+<!--                <button class="toolbar-btn" onclick="adjustWordFontSize(1)">A+</button>-->
+<!--            </div>-->
+<!--            <div class="toolbar-group">-->
+<!--                <button class="toolbar-btn" onclick="resetWordView()">重置视图</button>-->
+<!--            </div>-->
+<!--        {% elif doc_type == 'ppt' %}-->
+<!--            <div class="toolbar-group">-->
+<!--                <span>当前:</span>-->
+<!--                <span id="ppt-current-info">幻灯片 1</span>-->
+<!--            </div>-->
+<!--            <div class="toolbar-group">-->
+<!--                <button class="toolbar-btn" onclick="togglePPTFullscreen()">全屏查看</button>-->
+<!--            </div>-->
+<!--        {% elif doc_type == 'excel' %}-->
+<!--            <div class="toolbar-group">-->
+<!--                <span>缩放:</span>-->
+<!--                <button class="toolbar-btn" onclick="adjustExcelZoom(-10)">-</button>-->
+<!--                <span id="excel-zoom">100%</span>-->
+<!--                <button class="toolbar-btn" onclick="adjustExcelZoom(10)">+</button>-->
+<!--            </div>-->
+<!--            <div class="toolbar-group">-->
+<!--                <span id="excel-info">选择工作表</span>-->
+<!--            </div>-->
+<!--        {% endif %}-->
+<!--        <div class="toolbar-group">-->
+<!--            {% if session_data and session_data.session_id %}-->
+<!--            <span>会话: {{ session_data.session_id }}</span>-->
+<!--            {% endif %}-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; 主要内容区域 &ndash;&gt;-->
+<!--    <div class="office-content">-->
+<!--        <div class="document-viewer">-->
+<!--            {% if doc_type == 'word' %}-->
+<!--                &lt;!&ndash; Word文档查看器 &ndash;&gt;-->
+<!--                <div class="word-page">-->
+<!--                    <div class="word-content" id="word-content">-->
+<!--                        {% if doc_data.content %}-->
+<!--                            <pre>{{ doc_data.content }}</pre>-->
+<!--                        {% else %}-->
+<!--                            <div class="empty-state">-->
+<!--                                <div class="empty-icon">📝</div>-->
+<!--                                <h3>文档为空</h3>-->
+<!--                                <p>此Word文档没有内容</p>-->
+<!--                            </div>-->
+<!--                        {% endif %}-->
+<!--                    </div>-->
+<!--                </div>-->
+
+<!--            {% elif doc_type == 'ppt' %}-->
+<!--                &lt;!&ndash; PPT演示文稿查看器 &ndash;&gt;-->
+<!--                <div class="ppt-viewer">-->
+<!--                    {% if doc_data.content and doc_data.content is iterable and doc_data.content|length > 0 %}-->
+<!--                        {% set first_slide = doc_data.content[0] %}-->
+<!--                        {% if first_slide.get('error') %}-->
+<!--                            <div class="error-state">{{ first_slide.error }}</div>-->
+<!--                        {% else %}-->
+<!--                            <div class="slide-navigation">-->
+<!--                                <button class="nav-button" onclick="previousSlide()" id="prev-slide-btn">-->
+<!--                                    ← 上一张-->
+<!--                                </button>-->
+<!--                                <div class="slide-counter" id="slide-counter">-->
+<!--                                    1 / {{ doc_data.content|length }}-->
+<!--                                </div>-->
+<!--                                <button class="nav-button" onclick="nextSlide()" id="next-slide-btn">-->
+<!--                                    下一张 →-->
+<!--                                </button>-->
+<!--                            </div>-->
+
+<!--                            <div class="slide-container">-->
+<!--                                {% for slide in doc_data.content %}-->
+<!--                                    <div class="slide {% if loop.first %}active{% endif %}" id="slide-{{ loop.index }}">-->
+<!--                                        <h2>{{ slide.slide_number }}.-->
+<!--                                            {% if slide.content and slide.content|length > 0 %}-->
+<!--                                                {% set first_line = slide.content[0] %}-->
+<!--                                                {% if first_line|length > 30 %}-->
+<!--                                                    {{ first_line[:30] }}...-->
+<!--                                                {% else %}-->
+<!--                                                    {{ first_line }}-->
+<!--                                                {% endif %}-->
+<!--                                            {% else %}-->
+<!--                                                幻灯片 {{ slide.slide_number }}-->
+<!--                                            {% endif %}-->
+<!--                                        </h2>-->
+<!--                                        {% if slide.content and slide.content|length > 0 %}-->
+<!--                                            {% for text in slide.content %}-->
+<!--                                                <p>{{ text }}</p>-->
+<!--                                            {% endfor %}-->
+<!--                                        {% else %}-->
+<!--                                            <div class="empty-state">-->
+<!--                                                <div class="empty-icon">📊</div>-->
+<!--                                                <p>此幻灯片无文本内容</p>-->
+<!--                                            </div>-->
+<!--                                        {% endif %}-->
+<!--                                    </div>-->
+<!--                                {% endfor %}-->
+<!--                            </div>-->
+<!--                        {% endif %}-->
+<!--                    {% else %}-->
+<!--                        <div class="error-state">PPT内容为空或格式错误</div>-->
+<!--                    {% endif %}-->
+<!--                </div>-->
+
+<!--            {% elif doc_type == 'excel' %}-->
+<!--                &lt;!&ndash; Excel表格查看器 &ndash;&gt;-->
+<!--                <div class="excel-viewer">-->
+<!--                    {% if doc_data.content and not doc_data.content.get('error') %}-->
+<!--                        {% set sheet_names = [] %}-->
+<!--                        {% for sheet_name in doc_data.content.keys() %}-->
+<!--                            {% if sheet_name != 'error' %}-->
+<!--                                {% set _ = sheet_names.append(sheet_name) %}-->
+<!--                            {% endif %}-->
+<!--                        {% endfor %}-->
+
+<!--                        {% if sheet_names|length > 0 %}-->
+<!--                            <div class="sheet-tabs">-->
+<!--                                {% for sheet_name in sheet_names %}-->
+<!--                                    <button class="sheet-tab {% if loop.first %}active{% endif %}"-->
+<!--                                            onclick="switchExcelSheet('{{ loop.index }}', '{{ sheet_name }}', this)">-->
+<!--                                        📄 {{ sheet_name }}-->
+<!--                                    </button>-->
+<!--                                {% endfor %}-->
+<!--                            </div>-->
+
+<!--                            <div class="excel-content" id="excel-zoom-container">-->
+<!--                                {% for sheet_name in sheet_names %}-->
+<!--                                    <div class="excel-sheet {% if loop.first %}active{% endif %}"-->
+<!--                                         id="excel-sheet-{{ loop.index }}">-->
+<!--                                        {% set table_html = doc_data.content[sheet_name] %}-->
+<!--                                        {% if table_html %}-->
+<!--                                            <div class="table-wrapper">{{ table_html|safe }}</div>-->
+<!--                                        {% else %}-->
+<!--                                            <div class="empty-state">-->
+<!--                                                <div class="empty-icon">📊</div>-->
+<!--                                                <h3>工作表为空</h3>-->
+<!--                                                <p>此工作表没有数据</p>-->
+<!--                                            </div>-->
+<!--                                        {% endif %}-->
+<!--                                    </div>-->
+<!--                                {% endfor %}-->
+<!--                            </div>-->
+<!--                        {% else %}-->
+<!--                            <div class="error-state">Excel文件不包含任何工作表</div>-->
+<!--                        {% endif %}-->
+<!--                    {% else %}-->
+<!--                        <div class="error-state">-->
+<!--                            {% if doc_data.content and doc_data.content.get('error') %}-->
+<!--                                {{ doc_data.content.error }}-->
+<!--                            {% else %}-->
+<!--                                Excel内容为空或格式错误-->
+<!--                            {% endif %}-->
+<!--                        </div>-->
+<!--                    {% endif %}-->
+<!--                </div>-->
+<!--            {% else %}-->
+<!--                &lt;!&ndash; 未知文档类型 &ndash;&gt;-->
+<!--                <div class="error-state">-->
+<!--                    <h3>不支持的文档类型</h3>-->
+<!--                    <p>当前文档类型: {{ doc_type or '未知' }}</p>-->
+<!--                </div>-->
+<!--            {% endif %}-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--&lt;!&ndash; 1. 数据存储在HTML data属性中 &ndash;&gt;-->
+<!--<div id="template-data" style="display: none;"-->
+<!--     data-doc-type="{{ doc_type or '' }}"-->
+<!--     data-total-slides="{% if doc_type == 'ppt' and doc_data and doc_data.content %}{{ doc_data.content|length }}{% else %}0{% endif %}">-->
+<!--</div>-->
+
+<!--&lt;!&ndash; 2. JavaScript读取data属性 &ndash;&gt;-->
+<!--<script>-->
+<!--function getTemplateData() {-->
+<!--    const dataElement = document.getElementById('template-data');-->
+<!--    return {-->
+<!--        docType: dataElement.getAttribute('data-doc-type') || '',-->
+<!--        totalSlides: parseInt(dataElement.getAttribute('data-total-slides')) || 0-->
+<!--    };-->
+<!--}-->
+<!--</script>-->
+<!--&lt;!&ndash;</script>&ndash;&gt;-->
+<!--&lt;!&ndash;    <script type="text/javascript">&ndash;&gt;-->
+<!--&lt;!&ndash;        // 从模板安全地传递数据到JavaScript&ndash;&gt;-->
+<!--&lt;!&ndash;        window.templateData = {};&ndash;&gt;-->
+<!--&lt;!&ndash;        window.templateData.docType = "{{ doc_type or '' }}";&ndash;&gt;-->
+<!--&lt;!&ndash;        {% if doc_type == 'ppt' and doc_data and doc_data.content %}&ndash;&gt;-->
+<!--&lt;!&ndash;        window.templateData.totalSlides = {{ doc_data.content|length }};&ndash;&gt;-->
+<!--&lt;!&ndash;        {% else %}&ndash;&gt;-->
+<!--&lt;!&ndash;        window.templateData.totalSlides = 0;&ndash;&gt;-->
+<!--&lt;!&ndash;        {% endif %}&ndash;&gt;-->
+<!--&lt;!&ndash;        {% if doc_data and doc_data.content %}&ndash;&gt;-->
+<!--&lt;!&ndash;        window.templateData.hasContent = true;&ndash;&gt;-->
+<!--&lt;!&ndash;        {% else %}&ndash;&gt;-->
+<!--&lt;!&ndash;        window.templateData.hasContent = false;&ndash;&gt;-->
+<!--&lt;!&ndash;        {% endif %}&ndash;&gt;-->
+<!--&lt;!&ndash;    </script>&ndash;&gt;-->
+
+<!--    <script>-->
+<!--        // 全局变量-->
+<!--        let currentWordFontSize = 14;-->
+<!--        let currentSlideIndex = 1;-->
+<!--        let totalSlides = (window.templateData && window.templateData.totalSlides) ? window.templateData.totalSlides : 0;-->
+<!--        let currentExcelZoom = 100;-->
+
+<!--        // Word文档相关函数-->
+<!--        function adjustWordFontSize(delta) {-->
+<!--            currentWordFontSize += delta;-->
+<!--            if (currentWordFontSize < 10) currentWordFontSize = 10;-->
+<!--            if (currentWordFontSize > 24) currentWordFontSize = 24;-->
+
+<!--            const content = document.getElementById('word-content');-->
+<!--            const display = document.getElementById('word-font-size');-->
+
+<!--            if (content) {-->
+<!--                content.style.fontSize = currentWordFontSize + 'px';-->
+<!--            }-->
+<!--            if (display) {-->
+<!--                display.textContent = currentWordFontSize + 'px';-->
+<!--            }-->
+<!--        }-->
+
+<!--        function resetWordView() {-->
+<!--            currentWordFontSize = 14;-->
+<!--            adjustWordFontSize(0);-->
+<!--        }-->
+
+<!--        // PPT相关函数-->
+<!--        function showSlide(index) {-->
+<!--            if (index < 1 || index > totalSlides || totalSlides === 0) return;-->
+
+<!--            // 隐藏所有幻灯片-->
+<!--            document.querySelectorAll('.slide').forEach(function(slide) {-->
+<!--                slide.classList.remove('active');-->
+<!--            });-->
+
+<!--            // 显示目标幻灯片-->
+<!--            const targetSlide = document.getElementById('slide-' + index);-->
+<!--            if (targetSlide) {-->
+<!--                targetSlide.classList.add('active');-->
+<!--            }-->
+
+<!--            // 更新计数器-->
+<!--            const counter = document.getElementById('slide-counter');-->
+<!--            const info = document.getElementById('ppt-current-info');-->
+<!--            if (counter) {-->
+<!--                counter.textContent = index + ' / ' + totalSlides;-->
+<!--            }-->
+<!--            if (info) {-->
+<!--                info.textContent = '幻灯片 ' + index;-->
+<!--            }-->
+
+<!--            // 更新按钮状态-->
+<!--            const prevBtn = document.getElementById('prev-slide-btn');-->
+<!--            const nextBtn = document.getElementById('next-slide-btn');-->
+<!--            if (prevBtn) prevBtn.disabled = (index === 1);-->
+<!--            if (nextBtn) nextBtn.disabled = (index === totalSlides);-->
+
+<!--            currentSlideIndex = index;-->
+<!--        }-->
+
+<!--        function previousSlide() {-->
+<!--            if (currentSlideIndex > 1) {-->
+<!--                showSlide(currentSlideIndex - 1);-->
+<!--            }-->
+<!--        }-->
+
+<!--        function nextSlide() {-->
+<!--            if (currentSlideIndex < totalSlides) {-->
+<!--                showSlide(currentSlideIndex + 1);-->
+<!--            }-->
+<!--        }-->
+
+<!--        function togglePPTFullscreen() {-->
+<!--            try {-->
+<!--                if (!document.fullscreenElement) {-->
+<!--                    document.documentElement.requestFullscreen();-->
+<!--                } else {-->
+<!--                    document.exitFullscreen();-->
+<!--                }-->
+<!--            } catch (error) {-->
+<!--                console.warn('全屏功能不支持:', error);-->
+<!--            }-->
+<!--        }-->
+
+<!--        // Excel相关函数-->
+<!--        function switchExcelSheet(sheetIndex, sheetName, clickedBtn) {-->
+<!--            // 隐藏所有工作表-->
+<!--            document.querySelectorAll('.excel-sheet').forEach(function(sheet) {-->
+<!--                sheet.classList.remove('active');-->
+<!--            });-->
+
+<!--            // 显示目标工作表-->
+<!--            const targetSheet = document.getElementById('excel-sheet-' + sheetIndex);-->
+<!--            if (targetSheet) {-->
+<!--                targetSheet.classList.add('active');-->
+<!--            }-->
+
+<!--            // 更新标签状态-->
+<!--            document.querySelectorAll('.sheet-tab').forEach(function(tab) {-->
+<!--                tab.classList.remove('active');-->
+<!--            });-->
+<!--            if (clickedBtn) {-->
+<!--                clickedBtn.classList.add('active');-->
+<!--            }-->
+
+<!--            // 更新信息显示-->
+<!--            const info = document.getElementById('excel-info');-->
+<!--            if (info) {-->
+<!--                info.textContent = '当前: ' + sheetName;-->
+<!--            }-->
+
+<!--            // 增强表格样式-->
+<!--            enhanceExcelTable(targetSheet);-->
+<!--        }-->
+
+<!--        function adjustExcelZoom(delta) {-->
+<!--            currentExcelZoom += delta;-->
+<!--            if (currentExcelZoom < 50) currentExcelZoom = 50;-->
+<!--            if (currentExcelZoom > 200) currentExcelZoom = 200;-->
+
+<!--            const display = document.getElementById('excel-zoom');-->
+<!--            const container = document.getElementById('excel-zoom-container');-->
+
+<!--            if (display) {-->
+<!--                display.textContent = currentExcelZoom + '%';-->
+<!--            }-->
+<!--            if (container) {-->
+<!--                container.style.transform = 'scale(' + (currentExcelZoom / 100) + ')';-->
+<!--                container.style.transformOrigin = 'top left';-->
+<!--            }-->
+<!--        }-->
+
+<!--        function enhanceExcelTable(sheetElement) {-->
+<!--            if (!sheetElement) return;-->
+
+<!--            const table = sheetElement.querySelector('table');-->
+<!--            if (!table) return;-->
+
+<!--            // 添加Excel样式类-->
+<!--            table.className = 'excel-table';-->
+
+<!--            // 处理表头-->
+<!--            const headerRow = table.querySelector('tr');-->
+<!--            if (headerRow) {-->
+<!--                const firstHeader = headerRow.querySelector('th');-->
+<!--                if (firstHeader && !firstHeader.textContent.trim()) {-->
+<!--                    firstHeader.textContent = '#';-->
+<!--                }-->
+<!--            }-->
+
+<!--            // 为行添加行号-->
+<!--            const rows = table.querySelectorAll('tr');-->
+<!--            rows.forEach(function(row, index) {-->
+<!--                if (index === 0) return; // 跳过表头-->
+
+<!--                const firstCell = row.querySelector('td');-->
+<!--                if (firstCell && !firstCell.textContent.trim()) {-->
+<!--                    firstCell.textContent = index;-->
+<!--                }-->
+
+<!--                // 为数据单元格添加类型样式-->
+<!--                const cells = row.querySelectorAll('td:not(:first-child)');-->
+<!--                cells.forEach(function(cell) {-->
+<!--                    const text = cell.textContent.trim();-->
+<!--                    if (!isNaN(text) && text !== '') {-->
+<!--                        cell.classList.add('cell-number');-->
+<!--                    } else if (/^\d{4}-\d{2}-\d{2}/.test(text)) {-->
+<!--                        cell.classList.add('cell-date');-->
+<!--                    } else if (text.startsWith('=')) {-->
+<!--                        cell.classList.add('cell-formula');-->
+<!--                    }-->
+<!--                });-->
+<!--            });-->
+<!--        }-->
+
+<!--        // 键盘事件处理-->
+<!--        document.addEventListener('keydown', function(event) {-->
+<!--            const docType = (window.templateData && window.templateData.docType) ? window.templateData.docType : '';-->
+
+<!--            if (docType === 'ppt') {-->
+<!--                if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {-->
+<!--                    event.preventDefault();-->
+<!--                    previousSlide();-->
+<!--                } else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {-->
+<!--                    event.preventDefault();-->
+<!--                    nextSlide();-->
+<!--                } else if (event.key === 'F11') {-->
+<!--                    event.preventDefault();-->
+<!--                    togglePPTFullscreen();-->
+<!--                }-->
+<!--            }-->
+
+<!--            if (docType === 'excel') {-->
+<!--                if (event.ctrlKey || event.metaKey) {-->
+<!--                    if (event.key === '+' || event.key === '=') {-->
+<!--                        event.preventDefault();-->
+<!--                        adjustExcelZoom(10);-->
+<!--                    } else if (event.key === '-') {-->
+<!--                        event.preventDefault();-->
+<!--                        adjustExcelZoom(-10);-->
+<!--                    } else if (event.key === '0') {-->
+<!--                        event.preventDefault();-->
+<!--                        currentExcelZoom = 100;-->
+<!--                        adjustExcelZoom(0);-->
+<!--                    }-->
+<!--                }-->
+<!--            }-->
+<!--        });-->
+
+<!--        // 页面初始化-->
+<!--        document.addEventListener('DOMContentLoaded', function() {-->
+<!--            const docType = (window.templateData && window.templateData.docType) ? window.templateData.docType : '';-->
+
+<!--            if (docType === 'word') {-->
+<!--                // 初始化Word字体大小显示-->
+<!--                const fontDisplay = document.getElementById('word-font-size');-->
+<!--                if (fontDisplay) {-->
+<!--                    fontDisplay.textContent = currentWordFontSize + 'px';-->
+<!--                }-->
+<!--            }-->
+
+<!--            if (docType === 'ppt') {-->
+<!--                // 初始化PPT-->
+<!--                if (totalSlides > 0) {-->
+<!--                    showSlide(1);-->
+<!--                }-->
+<!--            }-->
+
+<!--            if (docType === 'excel') {-->
+<!--                // 初始化Excel-->
+<!--                const firstSheet = document.querySelector('.excel-sheet.active');-->
+<!--                if (firstSheet) {-->
+<!--                    enhanceExcelTable(firstSheet);-->
+<!--                }-->
+
+<!--                // 初始化缩放显示-->
+<!--                const zoomDisplay = document.getElementById('excel-zoom');-->
+<!--                if (zoomDisplay) {-->
+<!--                    zoomDisplay.textContent = currentExcelZoom + '%';-->
+<!--                }-->
+<!--            }-->
+
+<!--            console.log('Office查看器加载完成 - ' + docType);-->
+<!--        });-->
+<!--    </script>-->
+<!--</body>-->
+<!--</html>-->

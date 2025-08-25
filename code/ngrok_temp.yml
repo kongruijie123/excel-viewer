@@ -1,0 +1,11 @@
+authtoken: ''
+tunnels:
+  excel-viewer:
+    addr: 8000
+    bind_tls: true
+    inspect: false
+    proto: http
+    schemes:
+    - https
+    - http
+version: '2'

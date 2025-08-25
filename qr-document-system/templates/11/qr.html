@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二维码 - 文档展示系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .qr-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .qr-header {
+            margin-bottom: 30px;
+        }
+
+        .qr-header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .qr-header p {
+            color: #666;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        .qr-code {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            display: inline-block;
+        }
+
+        .qr-code img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .qr-instructions {
+            background: linear-gradient(45deg, #4CAF50, #2196F3);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .qr-instructions h3 {
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .qr-instructions ol {
+            text-align: left;
+            padding-left: 20px;
+        }
+
+        .qr-instructions li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 25px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: background 0.3s;
+            font-weight: bold;
+        }
+
+        .back-btn:hover {
+            background: #0056b3;
+        }
+
+        .url-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            color: #495057;
+        }
+
+        .status-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="qr-container">
+        <div class="qr-header">
+            <h1>📱 扫描二维码</h1>
+            <p>使用手机扫描下方二维码访问文档展示系统</p>
+        </div>
+
+        <div class="qr-code">
+            <img src="/static/qrcode.png" alt="二维码" id="qrcode-img">
+            <div id="session-qr" style="display: none;">
+                <img id="session-qr-img" alt="会话二维码" style="margin-top: 20px; border: 2px solid #007bff;">
+                <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                    <strong>会话二维码</strong> - 扫描查看已上传的文档
+                </p>
+            </div>
+        </div>
+
+        <div class="qr-instructions">
+            <h3>📋 使用说明</h3>
+            <ol>
+                <li>使用手机相机或二维码扫描APP扫描二维码</li>
+                <li><strong>上方二维码</strong>: 返回主页上传新文件</li>
+                <li><strong>蓝色边框二维码</strong> (如有): 直接查看已上传的文档内容</li>
+                <li>在展示页面可以查看所有已处理的文件内容</li>
+            </ol>
+            <p style="margin-top: 15px; font-size: 14px; opacity: 0.9;">
+                💡 扫描不同的二维码有不同功能哦！
+            </p>
+        </div>
+
+        <div class="url-info">
+            <strong>网站地址:</strong> http://192.168.1.110:8080
+        </div>
+
+        <div class="status-info">
+            <strong>💡 提示:</strong> 确保手机和Mac在同一WiFi网络下，IP地址: 192.168.1.110
+        </div>
+
+        <a href="/" class="back-btn">返回主页</a>
+    </div>
+
+    <script>
+        // 检查二维码图片是否存在
+        document.getElementById('qrcode-img').onerror = function() {
+            this.style.display = 'none';
+            const qrCode = document.querySelector('.qr-code');
+            qrCode.innerHTML = '<p style="color: #dc3545; font-weight: bold;">二维码生成失败，请重启服务器</p>';
+        };
+
+        // 检查是否有会话二维码
+        function checkSessionQR() {
+            fetch('/current_qr')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.has_qr) {
+                        const sessionQRDiv = document.getElementById('session-qr');
+                        const sessionQRImg = document.getElementById('session-qr-img');
+
+                        sessionQRImg.src = `/static/${data.qr_filename}`;
+                        sessionQRDiv.style.display = 'block';
+
+                        // 更新说明文字
+                        document.querySelector('.qr-instructions p').innerHTML =
+                            `找到 <strong>${data.document_count}</strong> 个已上传的文档！<br>
+                            扫描下方<strong>蓝色边框的会话二维码</strong>直接查看文档内容，<br>
+                            或扫描上方二维码返回上传页面。`;
+                    }
+                })
+                .catch(error => {
+                    console.log('没有当前会话');
+                });
+        }
+
+        // 页面加载时检查会话
+        window.addEventListener('load', checkSessionQR);
+
+        // 每5秒检查一次服务器状态
+        setInterval(function() {
+            fetch('/')
+                .then(response => {
+                    if (response.ok) {
+                        document.querySelector('.status-info').innerHTML =
+                            '<strong>✅ 状态:</strong> 服务器运行正常，二维码可以正常使用';
+                        document.querySelector('.status-info').style.background = '#d4edda';
+                        document.querySelector('.status-info').style.borderColor = '#c3e6cb';
+                        document.querySelector('.status-info').style.color = '#155724';
+                    }
+                })
+                .catch(error => {
+                    document.querySelector('.status-info').innerHTML =
+                        '<strong>❌ 状态:</strong> 服务器连接异常，请检查服务器是否正常运行';
+                    document.querySelector('.status-info').style.background = '#f8d7da';
+                    document.querySelector('.status-info').style.borderColor = '#f5c6cb';
+                    document.querySelector('.status-info').style.color = '#721c24';
+                });
+        }, 5000);
+    </script>
+</body>
+</html>

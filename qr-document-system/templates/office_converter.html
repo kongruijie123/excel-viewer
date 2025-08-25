@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ doc_data.filename }} - Office查看器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f3f2f1;
+            min-height: 100vh;
+        }
+
+        /* Office风格顶栏 */
+        .office-header {
+            background: #0078d4;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .office-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .office-icon {
+            font-size: 1.5em;
+        }
+
+        .file-info h1 {
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .file-info p {
+            font-size: 0.85em;
+            opacity: 0.9;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.9em;
+            transition: background 0.2s;
+        }
+
+        .header-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* Office风格工具

@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ doc_data.filename }} - PDF预览</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #2d2d2d;
+            color: white;
+            min-height: 100vh;
+        }
+
+        /* 顶部导航栏 */
+        .top-nav {
+            background: #1a1a1a;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #444;
+        }
+
+        .file-info h1 {
+            font-size: 1.2em;
+            color: #fff;
+        }
+
+        .file-info p {
+            font-size: 0.9em;
+            color: #bbb;
+            margin-top: 5px;
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            background: #0078d4;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.9em;
+            transition: background 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: #106ebe;
+        }
+
+        /* 工具栏 */
+        .toolbar {
+            background: #333;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            border-bottom: 1px solid #444;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toolbar-btn {
+            padding: 8px 16px;
+            background: #555;
+            color: white;
+            border: 1px solid #666;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .toolbar-btn:hover {
+            background: #666;
+        }
+
+        .toolbar-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .page-counter {
+            font-weight: 600;
+            color: #fff;
+            font-size: 1em;
+        }
+
+        /* 主要内容区 */
+        .viewer-container {
+            height: calc(100vh - 140px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .page-display {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease;
+            cursor: zoom-in;
+        }
+
+        .page-display.zoomed {
+            cursor: zoom-out;
+        }
+
+        /* 缩放控制 */
+        .zoom-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            background: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .zoom-btn:hover {
+            background: #106ebe;
+        }
+
+        /* 缩略图条 */
+        .thumbnail-strip {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.9);
+            padding: 10px 20px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            max-height: 100px;
+        }
+
+        .thumbnail {
+            min-width: 60px;
+            height: 80px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.2s;
+            object-fit: contain;
+        }
+
+        .thumbnail.active {
+            border-color: #0078d4;
+        }
+
+        .thumbnail:hover {
+            border-color: #666;
+        }
+
+        /* 加载状态 */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #333;
+            border-top: 4px solid #0078d4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .top-nav {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px 15px;
+            }
+
+            .toolbar {
+                flex-wrap: wrap;
+                padding: 10px 15px;
+            }
+
+            .viewer-container {
+                height: calc(100vh - 180px);
+                padding: 10px;
+            }
+
+            .zoom-controls {
+                bottom: 110px;
+                right: 10px;
+            }
+        }
+
+        /* 全屏模式 */
+        .fullscreen {
+            background: #000;
+        }
+
+        .fullscreen .top-nav,
+        .fullscreen .toolbar,
+        .fullscreen .thumbnail-strip {
+            display: none;
+        }
+
+        .fullscreen .viewer-container {
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <!-- 数据传递容器 - 使用HTML data属性 -->
+    <div id="document-data" style="display: none;"
+         data-filename="{{ doc_data.filename }}"
+         data-page-count="{{ doc_data.page_count }}"
+         data-uploaded-at="{{ doc_data.uploaded_at }}"
+         data-session-id="{{ session_data.session_id }}">
+        {% for image in doc_data.content %}
+        <div class="image-item" data-index="{{ loop.index0 }}" data-src="{{ image }}"></div>
+        {% endfor %}
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="top-nav">
+        <div class="file-info">
+            <h1>📄 {{ doc_data.filename }}</h1>
+            <p>共 {{ doc_data.page_count }} 页 | 上传时间: {{ doc_data.uploaded_at }}</p>
+        </div>
+        <div class="nav-actions">
+            <a href="/view/{{ session_data.session_id }}" class="nav-btn">← 返回列表</a>
+            <a href="/qr-document-system/static" class="nav-btn">🏠 主页</a>
+        </div>
+    </div>
+
+    <!-- 工具栏 -->
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <button class="toolbar-btn" onclick="previousPage()" id="prev-btn">← 上一页</button>
+            <div class="page-counter" id="page-counter">1 / {{ doc_data.page_count }}</div>
+            <button class="toolbar-btn" onclick="nextPage()" id="next-btn">下一页 →</button>
+        </div>
+
+        <div class="toolbar-group">
+            <button class="toolbar-btn" onclick="zoomOut()">🔍-</button>
+            <span id="zoom-display">100%</span>
+            <button class="toolbar-btn" onclick="zoomIn()">🔍+</button>
+            <button class="toolbar-btn" onclick="resetZoom()">重置</button>
+        </div>
+
+        <div class="toolbar-group">
+            <button class="toolbar-btn" onclick="toggleFullscreen()">全屏</button>
+            <button class="toolbar-btn" onclick="downloadCurrentPage()">下载当前页</button>
+        </div>
+    </div>
+
+    <!-- 主要查看区域 -->
+    <div class="viewer-container">
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>加载中...</p>
+        </div>
+
+        <img class="page-display" id="page-display"
+             onclick="toggleZoom()"
+             style="display: none;"
+             alt="文档页面">
+    </div>
+
+    <!-- 缩放控制 -->
+    <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomIn()" title="放大">+</button>
+        <button class="zoom-btn" onclick="resetZoom()" title="适合窗口">⌂</button>
+        <button class="zoom-btn" onclick="zoomOut()" title="缩小">-</button>
+    </div>
+
+    <!-- 缩略图导航条 -->
+    <div class="thumbnail-strip" id="thumbnail-strip" style="display: none;">
+        <!-- 缩略图将由JavaScript动态生成 -->
+    </div>
+
+    <script>
+        // 从HTML data属性读取文档信息
+        function getDocumentData() {
+            const dataContainer = document.getElementById('document-data');
+            if (!dataContainer) {
+                return {
+                    filename: '未知文档',
+                    pageCount: 0,
+                    uploadedAt: '',
+                    sessionId: '',
+                    images: []
+                };
+            }
+
+            // 读取基本信息
+            const filename = dataContainer.getAttribute('data-filename') || '未知文档';
+            const pageCount = parseInt(dataContainer.getAttribute('data-page-count')) || 0;
+            const uploadedAt = dataContainer.getAttribute('data-uploaded-at') || '';
+            const sessionId = dataContainer.getAttribute('data-session-id') || '';
+
+            // 读取图片列表
+            const imageItems = dataContainer.querySelectorAll('.image-item');
+            const images = [];
+            imageItems.forEach(item => {
+                const src = item.getAttribute('data-src');
+                if (src) {
+                    images.push(src);
+                }
+            });
+
+            return {
+                filename,
+                pageCount,
+                uploadedAt,
+                sessionId,
+                images
+            };
+        }
+
+        // 全局变量
+        const documentData = getDocumentData();
+        const images = documentData.images;
+        let currentPage = 1;
+        let totalPages = documentData.pageCount;
+        let currentZoom = 1;
+        let isZoomed = false;
+
+        // DOM元素
+        const pageDisplay = document.getElementById('page-display');
+        const pageCounter = document.getElementById('page-counter');
+        const zoomDisplay = document.getElementById('zoom-display');
+        const loading = document.getElementById('loading');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const thumbnailStrip = document.getElementById('thumbnail-strip');
+
+        // 显示指定页面
+        function showPage(pageNum) {
+            if (pageNum < 1 || pageNum > totalPages || totalPages === 0) return;
+
+            // 显示加载状态
+            loading.style.display = 'block';
+            pageDisplay.style.display = 'none';
+
+            // 更新图片
+            pageDisplay.onload = function() {
+                loading.style.display = 'none';
+                pageDisplay.style.display = 'block';
+            };
+
+            pageDisplay.onerror = function() {
+                loading.innerHTML = '<p>图片加载失败</p>';
+            };
+
+            pageDisplay.src = images[pageNum - 1];
+            pageDisplay.alt = `页面 ${pageNum}`;
+
+            // 更新页面计数
+            currentPage = pageNum;
+            pageCounter.textContent = `${pageNum} / ${totalPages}`;
+
+            // 更新按钮状态
+            prevBtn.disabled = (pageNum === 1);
+            nextBtn.disabled = (pageNum === totalPages);
+
+            // 更新缩略图选中状态
+            updateThumbnails();
+
+            console.log(`显示第 ${pageNum} 页`);
+        }
+
+        // 生成缩略图
+        function generateThumbnails() {
+            if (totalPages <= 1) return;
+
+            let thumbnailHTML = '';
+            for (let i = 0; i < totalPages; i++) {
+                const activeClass = i === 0 ? ' active' : '';
+                thumbnailHTML += `
+                    <img class="thumbnail${activeClass}"
+                         src="${images[i]}"
+                         onclick="goToPage(${i + 1})"
+                         alt="页面 ${i + 1}">
+                `;
+            }
+
+            thumbnailStrip.innerHTML = thumbnailHTML;
+            thumbnailStrip.style.display = 'flex';
+        }
+
+        // 更新缩略图选中状态
+        function updateThumbnails() {
+            const thumbnails = document.querySelectorAll('.thumbnail');
+            thumbnails.forEach((thumb, index) => {
+                if (index + 1 === currentPage) {
+                    thumb.classList.add('active');
+                } else {
+                    thumb.classList.remove('active');
+                }
+            });
+        }
+
+        // 页面导航
+        function previousPage() {
+            if (currentPage > 1) {
+                showPage(currentPage - 1);
+            }
+        }
+
+        function nextPage() {
+            if (currentPage < totalPages) {
+                showPage(currentPage + 1);
+            }
+        }
+
+        function goToPage(pageNum) {
+            showPage(pageNum);
+        }
+
+        // 缩放功能
+        function zoomIn() {
+            currentZoom = Math.min(currentZoom + 0.25, 3);
+            applyZoom();
+        }
+
+        function zoomOut() {
+            currentZoom = Math.max(currentZoom - 0.25, 0.25);
+            applyZoom();
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            isZoomed = false;
+            applyZoom();
+        }
+
+        function toggleZoom() {
+            if (isZoomed) {
+                resetZoom();
+            } else {
+                currentZoom = 1.5;
+                isZoomed = true;
+                applyZoom();
+            }
+        }
+
+        function applyZoom() {
+            pageDisplay.style.transform = `scale(${currentZoom})`;
+            zoomDisplay.textContent = Math.round(currentZoom * 100) + '%';
+
+            if (currentZoom > 1) {
+                pageDisplay.classList.add('zoomed');
+                isZoomed = true;
+            } else {
+                pageDisplay.classList.remove('zoomed');
+                isZoomed = false;
+            }
+        }
+
+        // 全屏功能
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log('全屏模式不支持:', err);
+                });
+                document.body.classList.add('fullscreen');
+            } else {
+                document.exitFullscreen();
+                document.body.classList.remove('fullscreen');
+            }
+        }
+
+        // 下载当前页面
+        function downloadCurrentPage() {
+            if (images[currentPage - 1]) {
+                const link = document.createElement('a');
+                link.href = images[currentPage - 1];
+                link.download = `${documentData.filename}_page_${currentPage}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        // 键盘快捷键
+        document.addEventListener('keydown', function(event) {
+            switch(event.key) {
+                case 'ArrowLeft':
+                case 'ArrowUp':
+                    event.preventDefault();
+                    previousPage();
+                    break;
+                case 'ArrowRight':
+                case 'ArrowDown':
+                    event.preventDefault();
+                    nextPage();
+                    break;
+                case 'F11':
+                    event.preventDefault();
+                    toggleFullscreen();
+                    break;
+                case '+':
+                case '=':
+                    if (event.ctrlKey || event.metaKey) {
+                        event.preventDefault();
+                        zoomIn();
+                    }
+                    break;
+                case '-':
+                    if (event.ctrlKey || event.metaKey) {
+                        event.preventDefault();
+                        zoomOut();
+                    }
+                    break;
+                case '0':
+                    if (event.ctrlKey || event.metaKey) {
+                        event.preventDefault();
+                        resetZoom();
+                    }
+                    break;
+                case 'Home':
+                    event.preventDefault();
+                    showPage(1);
+                    break;
+                case 'End':
+                    event.preventDefault();
+                    showPage(totalPages);
+                    break;
+            }
+        });
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('PDF查看器初始化', {
+                filename: documentData.filename,
+                totalPages: totalPages,
+                imagesCount: images.length
+            });
+
+            if (totalPages > 0 && images.length > 0) {
+                generateThumbnails();
+                showPage(1);
+            } else {
+                loading.innerHTML = '<p>没有找到页面内容</p>';
+            }
+        });
+
+        // 监听全屏变化
+        document.addEventListener('fullscreenchange', function() {
+            if (!document.fullscreenElement) {
+                document.body.classList.remove('fullscreen');
+            }
+        });
+    </script>
+</body>
+</html>

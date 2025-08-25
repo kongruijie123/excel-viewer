@@ -1,0 +1,252 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ filename }} - 完整查看</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 1rem 0;
+        }
+        .container-fluid {
+            max-width: 95%;
+        }
+        .main-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            background: white;
+        }
+        .card-header {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 1.5rem;
+        }
+        .sheet-nav {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .sheet-tab {
+            margin: 0 0.5rem;
+            border-radius: 20px;
+            border: 2px solid transparent;
+            background: white;
+            color: #495057;
+            transition: all 0.3s ease;
+        }
+        .sheet-tab:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+        .sheet-tab.active {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border-color: #20c997;
+        }
+        .table-container {
+            max-height: 70vh;
+            overflow: auto;
+            border-radius: 0 0 15px 15px;
+        }
+        .table {
+            font-size: 0.9em;
+            margin-bottom: 0;
+        }
+        .table th {
+            background: #f8f9fa;
+            border-top: none;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-weight: 600;
+        }
+        .table tbody tr:hover {
+            background: #f5f5f5;
+        }
+        .back-btn {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            z-index: 1000;
+            border-radius: 50px;
+            padding: 0.5rem 1.5rem;
+        }
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #fd7e14, #e63946);
+            border: none;
+            color: white;
+            font-size: 1.5em;
+        }
+        .sheet-info {
+            background: #e3f2fd;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+        .access-info {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9em;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <button class="btn btn-primary back-btn" onclick="goBack()">
+        <i class="fas fa-arrow-left"></i> 返回
+    </button>
+
+    <div class="container-fluid">
+        <div class="main-card">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h2><i class="fas fa-file-excel"></i> {{ filename }}</h2>
+                        <p class="mb-2">文件修改时间: {{ last_modified }}</p>
+                        {% if public_url %}
+                        <div class="access-info">
+                            <i class="fas fa-globe"></i> 全球公网访问
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-auto">
+                        <span class="badge bg-light text-dark fs-6">{{ sheets|length }} 个工作表</span>
+                    </div>
+                </div>
+            </div>
+
+            {% if sheets|length > 1 %}
+            <div class="sheet-nav">
+                <div class="d-flex flex-wrap justify-content-center">
+                    {% for sheet_name in sheets.keys() %}
+                    <button class="btn sheet-tab {% if loop.first %}active{% endif %}" 
+                            onclick="showSheet('{{ sheet_name }}')">
+                        <i class="fas fa-table"></i> {{ sheet_name }}
+                        <span class="badge bg-secondary ms-2">{{ sheets[sheet_name].row_count }}</span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% for sheet_name, sheet_data in sheets.items() %}
+            <div class="sheet-content" id="sheet-{{ loop.index0 }}" 
+                 style="{% if not loop.first %}display: none;{% endif %}">
+
+                <div class="sheet-info">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-table text-primary"></i> {{ sheet_name }}</h5>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <span class="badge bg-primary">{{ sheet_data.row_count }} 行</span>
+                            <span class="badge bg-success">{{ sheet_data.col_count }} 列</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    {% if sheet_data.data %}
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                {% for col in sheet_data.columns %}
+                                <th scope="col">{{ col }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in sheet_data.data %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                {% for col in sheet_data.columns %}
+                                <td>{{ row.get(col, '') }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-exclamation-triangle fa-3x text-muted"></i>
+                        <h4>工作表为空</h4>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="location.reload()" title="刷新数据">
+        <i class="fas fa-sync-alt"></i>
+    </button>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentSheet = 0;
+
+        function showSheet(sheetName) {
+            // 隐藏所有工作表
+            document.querySelectorAll('.sheet-content').forEach((sheet, index) => {
+                sheet.style.display = 'none';
+            });
+
+            // 显示选中的工作表
+            const sheets = document.querySelectorAll('.sheet-content');
+            const sheetIndex = Array.from(document.querySelectorAll('.sheet-tab')).findIndex(tab => 
+                tab.textContent.trim().includes(sheetName)
+            );
+
+            if (sheetIndex >= 0) {
+                sheets[sheetIndex].style.display = 'block';
+                currentSheet = sheetIndex;
+            }
+
+            // 更新标签页状态
+            document.querySelectorAll('.sheet-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        function goBack() {
+            window.location.href = '/';
+        }
+
+        // 自动刷新
+        setInterval(() => {
+            console.log('自动检查更新...');
+            fetch('/api/data')
+                .then(response => response.json())
+                .then(data => {
+                    // 检查文件是否有更新
+                    const currentFile = '{{ filename }}';
+                    if (data.last_modified[currentFile] !== '{{ last_modified }}') {
+                        console.log('检测到文件更新，正在刷新页面...');
+                        location.reload();
+                    }
+                })
+                .catch(error => console.error('检查更新失败:', error));
+        }, 10000); // 10秒检查一次更新
+    </script>
+</body>
+</html>
+    

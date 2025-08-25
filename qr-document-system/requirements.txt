@@ -1,0 +1,10 @@
+Flask==2.3.3
+qrcode[pil]==7.4.2
+pandas==2.0.3
+python-docx==0.8.11
+pywin32==306
+openpyxl==3.1.2
+xlrd==2.0.1
+Pillow==10.0.1
+Werkzeug==2.3.7
+Jinja2==3.1.2

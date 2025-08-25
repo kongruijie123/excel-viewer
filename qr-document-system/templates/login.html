@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文档分享系统 - 登录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-header {
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background-color: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #fcc;
+        }
+
+        .success-message {
+            background-color: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #cfc;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer-text {
+            color: #999;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+
+            .login-header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🔐 系统登录</h1>
+            <p>请输入访问密码</p>
+        </div>
+
+        <form id="loginForm" method="POST">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="{{ 'error-message' if category == 'error' else 'success-message' }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+            <div id="successMessage" class="success-message" style="display: none;"></div>
+
+            <div class="form-group">
+                <label for="password">访问密码</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    required
+                    placeholder="请输入密码"
+                    autocomplete="current-password"
+                >
+            </div>
+
+            <button type="submit" class="login-btn" id="submitBtn">
+                登录进入系统
+            </button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px;">验证中...</p>
+            </div>
+        </form>
+
+        <div class="footer-text">
+            安全的文档分享系统
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            const password = document.getElementById('password').value;
+
+            // 隐藏之前的消息
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+
+            // 显示加载状态
+            submitBtn.style.display = 'none';
+            loading.style.display = 'block';
+
+            // 发送登录请求
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `password=${encodeURIComponent(password)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    successMessage.textContent = '登录成功，正在跳转...';
+                    successMessage.style.display = 'block';
+
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '/';
+                    }, 1000);
+                } else {
+                    throw new Error(data.error || '登录失败');
+                }
+            })
+            .catch(error => {
+                errorMessage.textContent = error.message || '登录失败，请重试';
+                errorMessage.style.display = 'block';
+
+                // 恢复按钮状态
+                submitBtn.style.display = 'block';
+                loading.style.display = 'none';
+
+                // 清空密码输入框
+                document.getElementById('password').value = '';
+                document.getElementById('password').focus();
+            });
+        });
+
+        // 页面加载完成后聚焦密码输入框
+        window.addEventListener('load', function() {
+            document.getElementById('password').focus();
+        });
+
+        // 按Enter键提交表单
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html>
